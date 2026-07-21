@@ -322,7 +322,7 @@ theorem φ_const_comp_γμ {W : C} (g : FF.obj PUnit ⟶ (GF_def FF).obj W) :
   erw [h_g_eta] at h_final2
   exact h_final2
 
-def coEndoYonedaEquiv {F : C ⥤ C} {X : C} : (CYEF X ⟶ F ⋙ GF) ≃ (FF.obj PUnit ⟶ ((F ⋙ GF).obj X))
+def coEndoYonedaEquiv {F : C ⥤ C} {X : C} : (CYEF X ⟶ F ⋙ GF) ≃ (FF.obj PUnit ⟶ (F ⋙ GF).obj X)
 where
   toFun τ := (φ (X := PUnit) (Y := X ⟶ X) (fun _ => 𝟙 X)) ≫ τ.app X
   invFun g := globalFunctorialValueToNaturalTransformation2 F g
