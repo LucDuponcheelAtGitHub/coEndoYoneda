@@ -24,14 +24,15 @@ class FunctionalCategory (C : Type (u + 1)) extends LargeCategory.{u} C where
 
   -- γ_assoc is not needed
   -- γ_assoc :
-  --  ∀ (X : C), (GF_def FF).map (γμ.app X) ≫ γμ.app X = γμ.app ((GF_def FF).obj X) ≫ γμ.app X
+  --   ∀ (X : C), (GF_def FF).map (γμ.app X) ≫ γμ.app X = γμ.app ((GF_def FF).obj X) ≫ γμ.app X
 
   γη : 𝟭 _ ⟶ GF_def FF
 
   γ_left_unit : ∀ (X : C), γη.app ((GF_def FF).obj X) ≫ γμ.app X = 𝟙 ((GF_def FF).obj X)
 
   -- γ_right_unit is not needed
-  -- γ_right_unit : ∀ (X : C), (GF_def FF).map (γη.app X) ≫ γμ.app X = 𝟙 ((GF_def FF).obj X)
+  -- γ_right_unit :
+  --   ∀ (X : C), (GF_def FF).map (γη.app X) ≫ γμ.app X = 𝟙 ((GF_def FF).obj X)
 
   φ {X Y : Type u} (f : X → Y) : FF.obj X ⟶ FF.obj Y :=
     FF.map (TypeCat.ofHom f)
@@ -50,13 +51,13 @@ class FunctionalCategory (C : Type (u + 1)) extends LargeCategory.{u} C where
   --   right_unit := γ_right_unit
   -- }
 
+open FunctionalCategory
+
 abbrev CYEF {C : Type (u + 1)} [FunctionalCategory C] (X : C) : C ⥤ C :=
-  CYEF_def FunctionalCategory.FF X
+  CYEF_def FF X
 
 abbrev GF {C : Type (u + 1)} [FunctionalCategory C] : C ⥤ C :=
-  GF_def FunctionalCategory.FF
-
-open FunctionalCategory
+  GF_def FF
 
 instance typesFunctionalCategory : FunctionalCategory (Type u) where
   FF := 𝟭 (Type u)
@@ -321,7 +322,7 @@ theorem φ_const_comp_γμ {W : C} (g : FF.obj PUnit ⟶ (GF_def FF).obj W) :
   erw [h_g_eta] at h_final2
   exact h_final2
 
-def endoCoYonedaEquiv {F : C ⥤ C} {X : C} : (CYEF X ⟶ F ⋙ GF) ≃ (FF.obj PUnit ⟶ GF.obj (F.obj X)) where
+def coEndoYonedaEquiv {F : C ⥤ C} {X : C} : (CYEF X ⟶ F ⋙ GF) ≃ (FF.obj PUnit ⟶ GF.obj (F.obj X)) where
   toFun τ := (φ (X := PUnit) (Y := X ⟶ X) (fun _ => 𝟙 X)) ≫ τ.app X
   invFun g := globalFunctorialValueToNaturalTransformation2 F g
   left_inv := fun τ ↦ (coEndoYonedaLemma2 τ).symm
