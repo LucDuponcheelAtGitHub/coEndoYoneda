@@ -1,0 +1,310 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{tikz-cd}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{remark}[theorem]{Remark}
+
+\lstdefinelanguage{lean}{
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue}\bfseries,
+    commentstyle=\color{gray},
+    morekeywords={import, namespace, open, universe, abbrev, class, extends, where, instance, section, variable, theorem, def, by, intros, rfl, ext, dsimp, erw, rw, change, congr, exact, have, fun, let},
+    morecomment=[l]{--},
+    morecomment=[s]{/-}{-/},
+    literate=
+        {⥤}{{$\rightsquigarrow$}}1
+        {⋙}{{$\ggg$}}1
+        {⟶}{{$\longrightarrow$}}1
+        {𝟭}{{$\mathbf{1}$}}1
+        {𝟙}{{$\text{id}$}}1
+        {gamma}{{$\gamma$}}1
+        {mu}{{$\mu$}}1
+        {eta}{{$\eta$}}1
+        {tau}{{$\tau$}}1
+        {phi}{{$\varphi$}}1
+        {↾}{{$\upharpoonright$}}1
+        {∀}{{$\forall$}}1
+        {→}{{$\to$}}1
+        {=>}{{$\Rightarrow$}}1
+        {≫}{{$\gg$}}1
+        {≃}{{$\simeq$}}1
+}
+\lstset{
+    language=lean,
+    breaklines=true,
+    frame=single,
+    showstringspaces=false
+}
+
+\title{Pointfree CoEndoYoneda Lemma \\ 
+in \\
+Functional Categories \\ 
+Theory and Formalization in Lean 4}
+\author{Luc Duponcheel \and Antigravity AI}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We present a variation of the Yoneda Lemma for functional categories equipped with a monadic
+structure, which we formally identify as \emph{Functional Categories}. The central theoretical 
+contribution, the Pointfree CoEndoYoneda Lemma, establishes a natural bijection between natural
+transformations mapping out of a co-Yoneda endofunctor and corresponding global elements within the 
+monadic functional category. In addition to outlining the mathematical foundations, we detail the
+complete formalization of this result in the Lean 4 theorem prover. 
+
+We discuss the technical challenges of working with functor compositions under strict definitional
+equality and demonstrate strategies for navigating dependent type theory to construct fully formal,
+pointfree proofs of higher-level category theory results.
+\end{abstract}
+
+\section{Introduction}
+
+The \emph{CoYoneda Lemma} serves as a cornerstone of modern category theory, asserting that for any
+category  $\mathcal{C}$, object $X \in \mathcal{C}$, and functor $F : \mathcal{C} \to \mathbf{Set}$,
+the set of natural transformations $\text{Nat}(\mathcal{C}(X, -), F)$ is isomorphic to the
+evaluation $F(X)$. This result fundamentally states that an object $X$ is completely determined by
+the morphisms out of it.
+
+In computational settings, we frequently encounter categories equipped with additional 
+structure—specifically, categories that natively interpret types (or sets) and possess a monad-like
+mechanism for handling effects. We define such a category as a \emph{Functional Category}. In this
+paper, we explore how the Yoneda principle extends to this structural setting. 
+
+The primary contribution is the \emph{CoEndoYoneda Lemma}, which characterizes natural
+transformations that map out of an endofunctor defined via the co-Yoneda embedding. We state two
+main lemmas, showing that such natural transformations are entirely determined by their evaluation
+at the identity morphism. We have a type-level equivalence between natural transformations from the
+endo-coyoneda embedding and global elements. The equivalence is, replacing elements by global
+elements, entirely pointfree.
+
+We also  provide a comprehensive discussion of how these concepts and theorems are
+formalized in the Lean 4 proof assistant using the \texttt{Mathlib} library.
+
+\section{Functional Categories}
+
+Let $\mathcal{C}$ be a locally small category. We denote the category of types (or sets) as
+$\mathbf{Type}$. For any object $X \in \mathcal{C}$, the covariant Hom-functor, which we will call
+the co-Yoneda functor, is defined as:
+\[
+CY\!F_X : \mathcal{C} \to \mathbf{Type}, \quad Y \mapsto \mathcal{C}(X, Y)
+\]
+
+\begin{definition}
+A \textbf{Functional Category} is a category $\mathcal{C}$ equipped with the following data:
+\begin{enumerate}
+    \item A designated functor $FF : \mathbf{Type} \to \mathcal{C}$.
+    \item A constructed endofunctor $GF : \mathcal{C} \to \mathcal{C}$ 
+          defined by \\
+          $GF(X) = FF(CY\!F_{FF(1)}(X))$.
+    \item A monadic structure over $GF$, provided by a \\
+          unit natural transformation  $\gamma\eta : \text{Id}_{\mathcal{C}} \to GF$ and a \\
+          multiplication natural transformation $\gamma\mu : GF \circ GF \to GF$.
+\end{enumerate}
+
+These structural components must satisfy the standard monad left unit law: 
+
+\[
+\gamma\eta_{GF(X)} \circ \gamma\mu_X = \text{id}_{GF(X)}
+\]
+\end{definition}
+
+For now no other extra laws besides, of course, the naturality laws, are needed in the formal Lean 4
+proof. This is an interesting observation on its own.
+
+This structure essentially allows $\mathcal{C}$ to reflect the category of types into itself, while
+treating $GF$ as a monadic context. To generalize Yoneda, we define the \emph{CoYoneda EndoFunctor}
+$CY\!EF_X : \mathcal{C} \to \mathcal{C}$ for a fixed object $X$ as the composition:
+
+\[
+CY\!EF_X = CY\!F_X \circ FF
+\]
+
+\subsection{Formalization of Functional Categories in Lean 4}
+
+In Lean 4, this structure is elegantly captured using a type class extending the standard
+\texttt{LargeCategory} from \texttt{Mathlib}. 
+
+\newpage
+
+\begin{lstlisting}[basicstyle=\tiny]
+class FunctionalCategory (C : Type (u + 1)) extends LargeCategory.{u} C where
+  FF : Type u ⥤ C
+
+  gammamu : GF_def FF ⋙ GF_def FF ⟶ GF_def FF
+  gammaeta : 𝟭 _ ⟶ GF_def FF
+
+  gamma_left_unit : 
+    ∀ (X : C), gammaeta.app ((GF_def FF).obj X) ≫ gammamu.app X = 𝟙 ((GF_def FF).obj X)
+
+  phi {X Y : Type u} (f : X → Y) : FF.obj X ⟶ FF.obj Y := FF.map (TypeCat.ofHom f)
+
+  phi_eq : 
+    ∀ {X Y : Type u} (f : X → Y), phi f = FF.map (TypeCat.ofHom f) := 
+      by intros; rfl
+
+  gammaeta_phi :
+    ∀ (W : Type u), gammaeta.app (FF.obj W) = phi (fun (w : W) => phi (fun (_ : PUnit) => w)) :=
+      by intros; rfl
+\end{lstlisting}
+
+This class natively encapsulates the natural transformations and the left unit law constraint. A
+canonical instance of this class is $\mathbf{Type}$ itself, where $FF$ is the identity functor.
+
+\begin{lstlisting}[basicstyle=\tiny]
+instance typesFunctionalCategory : FunctionalCategory (Type u) where
+  FF := 𝟭 (Type u)
+  gammaeta := {
+    app := fun X => (𝟭 (Type u)).map (↾(fun (x : X) => ↾(fun _ : PUnit => x)))
+    naturality := fun X Y f => by ext; rfl
+  }
+  gammamu := {
+    app := fun X => (𝟭 (Type u)).map (↾(fun (f : PUnit ⟶ PUnit ⟶ X) => ↾(fun p : PUnit => (f p) p)))
+    naturality := fun X Y f => by ext; rfl
+  }
+  gamma_left_unit := fun X => by rfl
+\end{lstlisting}
+
+\section{The CoEndoYoneda Lemmas}
+
+The core results consist of two lemmas showing how natural transformations out of $CY\!EF_Z$ uniquely
+correspond to global elements.
+
+\subsection{CoEndoYoneda Lemma 1}
+
+\begin{lemma}
+For any monadic functional category $\mathcal{C}$, endofunctor $F : \mathcal{C} \to \mathcal{C}$,
+and object $Z \in \mathcal{C}$, there is an injection mapping natural transformations
+$\tau : CY\!EF_Z \to F$ into transformations targeting $F \circ GF$. 
+\end{lemma}
+
+We define \texttt{globalEndoTransformation} which takes $\tau$ and post-composes it with the monad
+unit $\gamma\eta$. Lemma 1 asserts that this transformation is identical to the one constructed by
+taking the evaluation of $\tau$ at the identity morphism $1_Z$ and lifting it through $FF$.
+
+\begin{lstlisting}[basicstyle=\tiny]
+def globalFunctorialValueToNaturalTransformation1
+  (F : C ⥤ C) {X : C} (g : FF.obj PUnit ⟶ F.obj X) :
+    CY\!EF X ⟶ F ⋙ GF where
+  app Y :=
+    phi ((fun f => g ≫ F.map f) : (X ⟶ Y) → (FF.obj PUnit ⟶ F.obj Y))
+  -- (naturality proof omitted)
+
+theorem coEndoYonedaLemma1 {F : C ⥤ C} {Z : C} (tau : CY\!EF Z ⟶ F) :
+    globalEndoTransformation tau =
+    globalFunctorialValueToNaturalTransformation1 F
+      ((phi (X := PUnit) (Y := Z ⟶ Z) (fun _ => 𝟙 Z)) ≫ tau.app Z)
+\end{lstlisting}
+
+\subsection{CoEndoYoneda Lemma 2}
+
+Lemma 2 is the more substantial result, demonstrating a complete bijection when the target functor
+is $F \circ GF$. 
+
+\begin{theorem}
+Let $\tau : CY\!EF_Z \to F \circ GF$ be a natural transformation. Then $\tau$ is uniquely determined
+by its evaluation at $1_Z$. There exists a bijection between such transformations and global
+elements $g : FF(1) \to GF(F(Z))$.
+\end{theorem}
+
+In Lean, we construct the transformation out of the global element $g$ and then prove that any
+arbitrary $\tau$ is exactly this constructed transformation:
+
+\begin{lstlisting}[basicstyle=\tiny]
+theorem coEndoYonedaLemma2 {F : C ⥤ C} {Z : C} (tau : CY\!EF Z ⟶ F ⋙ GF) :
+    tau = globalFunctorialValueToNaturalTransformation2 F
+      ((phi (X := PUnit) (Y := Z ⟶ Z) (fun _ => 𝟙 Z)) ≫ tau.app Z) := by
+  ext Y
+  -- ... (proof steps)
+\end{lstlisting}
+
+\subsection{EndoCoYoneda Equivalence}
+
+Building upon Lemma 2, we can establish a formal equivalence between the set of natural 
+transformations out of the co-Yoneda endofunctor and the corresponding global elements.
+This result is the direct generalization of  the classical CoYoneda equivalence to our monadic
+functional category setting.
+
+\begin{theorem}
+There is a type-level equivalence between natural transformations $CY\!EF_X \to F \circ GF$ 
+and elements of $FF(1) \to GF(F(X))$.
+\end{theorem}
+
+In Lean 4, we define this as an \texttt{Equiv} (denoted by \texttt{$\simeq$}).
+
+Utilizing \texttt{coEndoYonedaLemma2} enables us to effortlessly prove the left inverse property.
+For the right inverse, we rely on specialized pointfree mapping lemmas that handle constant
+functions evaluated under $\varphi$:
+
+\begin{lstlisting}[basicstyle=\tiny]
+def endoCoYonedaEquiv {F : C ⥤ C} {X : C} : 
+    (CY\!EF X ⟶ F ⋙ GF) ≃ (FF.obj PUnit ⟶ GF.obj (F.obj X)) where
+  toFun tau := (phi (X := PUnit) (Y := X ⟶ X) (fun _ => 𝟙 X)) ≫ tau.app X
+  invFun g := globalFunctorialValueToNaturalTransformation2 F g
+  left_inv := fun tau => (coEndoYonedaLemma2 tau).symm
+  right_inv := fun g => by
+    exact phi_const_comp_gammamu g
+\end{lstlisting}
+
+This equivalence provides a completely pointfree and logically verified dictionary for evaluating and constructing natural transformations in functional categories.
+
+\section{Proof Techniques and Challenges in Lean 4}
+
+Formalizing abstract category theory in dependent type theory (DTT) introduces unique difficulties,
+particularly concerning definitional equality. 
+
+\subsection{Strict Functor Composition}
+In standard mathematics, functor composition is strictly associative. In Lean 4, however, these are
+represented as distinct abstract syntax trees. They are \emph{isomorphic} via 
+\texttt{Category.assoc}, but they are not \emph{definitionally equal}. 
+
+When writing the proof of \texttt{coEndoYonedaLemma2}, this limitation prevents standard
+term-rewriting tactics like \texttt{simp} from effortlessly reducing deeply nested compositions.
+
+\subsection{Constructing Equality Chains}
+To circumvent the strict type-checker without resorting to manual casts (such as \texttt{eqToHom}),
+the proof for \texttt{coEndoYonedaLemma2} abandons the monolithic \texttt{simp} approach in favor of
+explicit equality chains acting on the natural transformation components.
+
+By utilizing \texttt{Eq.trans} and \texttt{congr\_arg}, we explicitly guide the type checker through
+the unit laws and naturality squares:
+
+\begin{lstlisting}[basicstyle=\tiny]
+  have h1 : 
+    tau.app Y = 
+      tau.app Y ≫ 𝟙 ((GF_def FF).obj (F.obj Y)) := 
+        (Category.comp_id (tau.app Y)).symm
+  have h2 : 
+    𝟙 ((GF_def FF).obj (F.obj Y)) = 
+      gammaeta.app ((GF_def FF).obj (F.obj Y)) ≫ gammamu.app (F.obj Y) :=
+        (gamma_left_unit (F.obj Y)).symm
+  have h_left_unit : 
+    tau.app Y = 
+      tau.app Y ≫ (gammaeta.app ((GF_def FF).obj (F.obj Y)) ≫ gammamu.app (F.obj Y)) :=
+        Eq.trans h1 (congr_arg (fun g => tau.app Y ≫ g) h2)
+\end{lstlisting}
+
+This localized approach bypasses the rigid typing of the $\longrightarrow$ category morphisms by
+acting directly on the equality type \texttt{=} in the universe of types. This technique is highly
+robust and avoids the infamous "motive is not type correct" errors common in Lean category theory
+formalization.
+
+\section{Conclusion}
+
+The Pointfree CoEndoYoneda Lemma is a variation of the classical Pointful CoYoneda Lemma in a
+monadic functional category setting. By successfully formalizing the lemma in Lean 4, we have not
+only verified its absolute logical correctness but also established a concrete methodology for
+handling strict composition equality in dependent type theory. The approach of combining explicit
+structural definitions with targeted, step-by-step equality chaining provides a reliable method for
+formalizing advanced category theory in modern proof assistants.
+
+\end{document}

@@ -1,0 +1,17 @@
+
+name = "coEndoYoneda"
+version = "0.1.0"
+defaultTargets = ["coendoyoneda"]
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "v4.32.0"
+
+
+[[lean_lib]]
+name = "CoEndoYoneda"
+
+[[lean_exe]]
+name = "coendoyoneda"
+root = "Main"
