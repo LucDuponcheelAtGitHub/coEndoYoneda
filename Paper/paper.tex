@@ -6,6 +6,14 @@
 \usepackage{listings}
 \usepackage{xcolor}
 
+\DeclareUnicodeCharacter{03C6}{\ensuremath{\varphi}}
+\DeclareUnicodeCharacter{03A6}{\ensuremath{\Phi}}
+\DeclareUnicodeCharacter{03B3}{\ensuremath{\gamma}}
+\DeclareUnicodeCharacter{03BC}{\ensuremath{\mu}}
+\DeclareUnicodeCharacter{03B7}{\ensuremath{\eta}}
+\DeclareUnicodeCharacter{03C4}{\ensuremath{\tau}}
+\DeclareUnicodeCharacter{2243}{\ensuremath{\simeq}}
+
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{lemma}[theorem]{Lemma}
 \newtheorem{definition}[theorem]{Definition}
@@ -24,11 +32,14 @@
         {⟶}{{$\longrightarrow$}}1
         {𝟭}{{$\mathbf{1}$}}1
         {𝟙}{{$\text{id}$}}1
-        {gamma}{{$\gamma$}}1
-        {mu}{{$\mu$}}1
-        {eta}{{$\eta$}}1
-        {tau}{{$\tau$}}1
-        {phi}{{$\varphi$}}1
+        {γμ}{{$\gamma\mu$}}2
+        {γη}{{$\gamma\eta$}}2
+        {γ}{{$\gamma$}}1
+        {μ}{{$\mu$}}1
+        {η}{{$\eta$}}1
+        {τ}{{$\tau$}}1
+        {φ}{{$\varphi$}}1
+        {Φ}{{$\Phi$}}1
         {↾}{{$\upharpoonright$}}1
         {∀}{{$\forall$}}1
         {→}{{$\to$}}1
@@ -143,49 +154,49 @@ In Lean 4, this structure is elegantly captured using a type class extending the
 \newpage
 
 \begin{lstlisting}[basicstyle=\tiny]
-abbrev G {C : Type (u + 1)} [LargeCategory.{u} C] (FF : Type u ⥤ C) (X : C) : Type u :=
-  FF.obj PUnit ⟶ X
+abbrev G {C : Type (u + 1)} [LargeCategory.{u} C] (T2C : Type u ⥤ C) (X : C) : Type u :=
+  T2C.obj PUnit ⟶ X
 
 class FunctionalCategory (C : Type (u + 1)) extends LargeCategory.{u} C where
-  FF : Type u ⥤ C
+  Φ : Type u ⥤ C
 
-  gammamu : GF_def FF ⋙ GF_def FF ⟶ GF_def FF
-  gammaeta : 𝟭 _ ⟶ GF_def FF
+  γμ : (GEF_def Φ ⋙ GEF_def Φ) ⟶ GEF_def Φ
+  γη : 𝟭 _ ⟶ GEF_def Φ
 
-  gamma_left_unit : 
-    ∀ (X : C), gammaeta.app ((GF_def FF).obj X) ≫ gammamu.app X = 𝟙 ((GF_def FF).obj X)
+  γ_left_unit : 
+    ∀ (X : C), γη.app ((GEF_def Φ).obj X) ≫ γμ.app X = 𝟙 ((GEF_def Φ).obj X)
 
-  phi {X Y : Type u} (f : X → Y) : FF.obj X ⟶ FF.obj Y := FF.map (TypeCat.ofHom f)
+  φ {X Y : Type u} (f : X → Y) : Φ.obj X ⟶ Φ.obj Y := Φ.map (TypeCat.ofHom f)
 
-  phi_eq : 
-    ∀ {X Y : Type u} (f : X → Y), phi f = FF.map (TypeCat.ofHom f) := 
+  φ_eq : 
+    ∀ {X Y : Type u} (f : X → Y), φ f = Φ.map (TypeCat.ofHom f) := 
       by intros; rfl
 
-  gammaeta_phi :
-    ∀ (W : Type u), gammaeta.app (FF.obj W) = phi (fun (w : W) => phi (fun (_ : PUnit) => w)) :=
+  γη_φ :
+    ∀ (Z : Type u), γη.app (Φ.obj Z) = φ (fun z => φ (fun _ => z)) :=
       by intros; rfl
 \end{lstlisting}
 
 This class natively encapsulates the natural transformations and the left unit law constraint. A
-canonical instance of this class is $\mathbf{Type}$ itself, where $FF$ is the identity functor.
+canonical instance of this class is $\mathbf{Type}$ itself, where $\Phi$ is the identity functor.
 
 \begin{lstlisting}[basicstyle=\tiny]
 instance typesFunctionalCategory : FunctionalCategory (Type u) where
-  FF := 𝟭 (Type u)
-  gammaeta := {
-    app := fun X => (𝟭 (Type u)).map (↾(fun (x : X) => ↾(fun _ : PUnit => x)))
+  Φ := 𝟭 (Type u)
+  γη := {
+    app := fun X => (𝟭 (Type u)).map (↾(fun x => ↾(fun _ => x)))
     naturality := fun X Y f => by ext; rfl
   }
-  gammamu := {
-    app := fun X => (𝟭 (Type u)).map (↾(fun (f : PUnit ⟶ PUnit ⟶ X) => ↾(fun p : PUnit => (f p) p)))
+  γμ := {
+    app := fun X => (𝟭 (Type u)).map (↾(fun (f : PUnit ⟶ PUnit ⟶ X) => ↾(fun pu => f pu pu)))
     naturality := fun X Y f => by ext; rfl
   }
-  gamma_left_unit := fun X => by rfl
+  γ_left_unit := fun _ => by rfl
 \end{lstlisting}
 
 \section{The CoEndoYoneda Lemmas}
 
-The core results consist of two lemmas showing how natural transformations out of $CY\!EF_Z$ uniquely
+The core results consist of two main lemmas and a type-level equivalence showing how natural transformations out of $CY\!EF_Z$ uniquely
 correspond to global elements.
 
 \subsection{CoEndoYoneda Lemma 1}
@@ -193,75 +204,89 @@ correspond to global elements.
 \begin{lemma}
 For any monadic functional category $\mathcal{C}$, endofunctor $F : \mathcal{C} \to \mathcal{C}$,
 and object $Z \in \mathcal{C}$, there is an injection mapping natural transformations
-$\tau : CY\!EF_Z \to F$ into transformations targeting $F \circ GF$. 
+$\tau : CY\!EF_Z \to F$ into transformations targeting $F \circ GEF$. 
 \end{lemma}
 
-We define \texttt{globalEndoTransformation} which takes $\tau$ and post-composes it with the monad
+We define \texttt{transformationToGlobalTransformation} which takes $\tau$ and post-composes it with the monad
 unit $\gamma\eta$. Lemma 1 asserts that this transformation is identical to the one constructed by
-taking the evaluation of $\tau$ at the identity morphism $1_Z$ and lifting it through $FF$.
+taking the evaluation of $\tau$ at the identity morphism $1_Z$ and lifting it through $\Phi$.
 
 \begin{lstlisting}[basicstyle=\tiny]
-def globalFunctorialValueToNaturalTransformation1
-  (F : C ⥤ C) {X : C} (g : G FF (F.obj X)) :
-    CYEF X ⟶ F ⋙ GF where
-  app Y :=
-    phi ((fun f => g ≫ F.map f) : (X ⟶ Y) → (G FF (F.obj Y)))
-  -- (naturality proof omitted)
+@[simps]
+def transformationToGlobalTransformation {F : C ⥤ C} {Z : C} (τX : CYEF Z ⟶ F) :
+    CYEF Z ⟶ (F ⋙ GEF) where
+  app Y := τX.app Y ≫ γη.app (F.obj Y)
 
-theorem coEndoYonedaLemma1 {F : C ⥤ C} {Z : C} (tau : CY\!EF Z ⟶ F) :
-    globalEndoTransformation tau =
-    globalFunctorialValueToNaturalTransformation1 F
-      ((phi (X := PUnit) (Y := Z ⟶ Z) (fun _ => 𝟙 Z)) ≫ tau.app Z)
+@[simps]
+def globalValueToGlobalTransformation {F : C ⥤ C} {X : C} (gfx : Global (F.obj X)) :
+    CYEF X ⟶ (F ⋙ GEF) where
+  app Y := φ (gfx ≫ F.map .)
+
+theorem coEndoYonedaLemma {F : C ⥤ C} {Z : C} (τX : CYEF Z ⟶ F) :
+  transformationToGlobalTransformation τX =
+    globalValueToGlobalTransformation (φ (fun _ => 𝟙 Z) ≫ τX.app Z)
 \end{lstlisting}
 
 \subsection{CoEndoYoneda Lemma 2}
 
 Lemma 2 is the more substantial result, demonstrating a complete bijection when the target functor
-is $F \circ GF$. 
+is $F \circ GEF$. 
 
 \begin{theorem}
-Let $\tau : CYEF_Z \to F \circ GF$ be a natural transformation. Then $\tau$ is uniquely determined
+Let $\tau : CY\!EF_Z \to F \circ GEF$ be a natural transformation. Then $\tau$ is uniquely determined
 by its evaluation at $1_Z$. There exists a bijection between such transformations and global
-elements $g \in G_{\mathit{FF}}(GF(F(Z)))$.
+elements $g \in G_{\Phi}(GEF(F(Z)))$.
 \end{theorem}
 
-In Lean, we construct the transformation out of the global element $g$ and then prove that any
-arbitrary $\tau$ is exactly this constructed transformation:
+In Lean, we construct the transformation out of the global element $g$ via \texttt{globalGlobalValueToGlobalTransformation} and then prove in \texttt{left\_inverse} that any
+arbitrary $\tau$ is exactly this constructed transformation from its evaluated global value:
 
 \begin{lstlisting}[basicstyle=\tiny]
-theorem coEndoYonedaLemma2 {F : C ⥤ C} {Z : C} (tau : CYEF Z ⟶ F ⋙ GF) :
-    tau = globalFunctorialValueToNaturalTransformation2 F
-      ((phi (X := PUnit) (Y := Z ⟶ Z) (fun _ => 𝟙 Z)) ≫ tau.app Z) := by
-  ext Y
-  -- ... (proof steps)
+def globalTransformationToGlobalGlobalValue {F : C ⥤ C} {X : C} (τX : CYEF X ⟶ F ⋙ GEF) :
+  Global ((F ⋙ GEF).obj X) := φ (fun _ => 𝟙 X) ≫ τX.app X
+
+@[simps]
+def globalGlobalValueToGlobalTransformation
+  {F : C ⥤ C} {X : C} (ggfx : Global (GEF.obj (F.obj X))) : CYEF X ⟶ (F ⋙ GEF) where
+  app Y := φ (ggfx ≫ (F ⋙ GEF).map .) ≫ γμ.app (F.obj Y)
+
+theorem left_inverse {F : C ⥤ C} {Z : C} (τX : CYEF Z ⟶ (F ⋙ GEF)) :
+  τX =
+    globalGlobalValueToGlobalTransformation (φ (fun _ => 𝟙 Z) ≫ τX.app Z)
 \end{lstlisting}
 
 \subsection{CoEndoYoneda Equivalence}
 
-Building upon Lemma 2, we can establish a formal equivalence between the set of natural 
+Building upon Lemma 2 and the dual inverse mapping, we establish a formal type-level equivalence between the set of natural 
 transformations out of the co-Yoneda endofunctor and the corresponding global elements.
-This result is the direct generalization of  the classical CoYoneda equivalence to our monadic
+This result is the direct generalization of the classical CoYoneda equivalence to our monadic
 functional category setting.
 
 \begin{theorem}
-There is a type-level equivalence between natural transformations $CY\!EF_X \to F \circ GF$ 
-and global elements $G_{\mathit{FF}}(GF(F(X)))$.
+There is a type-level equivalence between natural transformations $CY\!EF_X \to F \circ GEF$ 
+and global elements $G_{\Phi}(GEF(F(X)))$.
 \end{theorem}
 
 In Lean 4, we define this as an \texttt{Equiv} (denoted by \texttt{$\simeq$}).
 
-Utilizing \texttt{coEndoYonedaLemma2} enables us to effortlessly prove the left inverse property.
-For the right inverse, we rely on specialized pointfree mapping lemmas that handle constant
-functions evaluated under $\varphi$:
+Utilizing \texttt{left\_inverse} provides the left inverse property.
+For the right inverse, \texttt{right\_inverse} proves that evaluating the constructed transformation back at the identity yields the original global element, using the lemma \texttt{φ\_γμ} to collapse $\varphi(\text{const } ggfx) \gg \gamma\mu = ggfx$:
 
 \begin{lstlisting}[basicstyle=\tiny]
-def coEndoYonedaEquiv {F : C ⥤ C} {X : C} : 
-    (CYEF X ⟶ F ⋙ GF) ≃ (G FF ((F ⋙ GF).obj X)) where
-  toFun tau := (phi (X := PUnit) (Y := X ⟶ X) (fun _ => 𝟙 X)) ≫ tau.app X
-  invFun g := globalFunctorialValueToNaturalTransformation2 F g
-  left_inv := fun tau => (coEndoYonedaLemma2 tau).symm
-  right_inv := fun g => by
-    exact phi_const_comp_gammamu g
+theorem φ_γμ {X : C} (ggfx : Global ((GEF_def Φ).obj X)) :
+    φ (fun _ => ggfx) ≫ γμ.app X = ggfx
+
+theorem right_inverse {F : C ⥤ C} {X : C} :
+  ∀ (ggfx : Global ((F ⋙ GEF).obj X)),
+    ggfx =
+      (fun τX => (φ fun _ => 𝟙 X) ≫ τX.app X) (globalGlobalValueToGlobalTransformation ggfx)
+
+def coEndoYonedaEquiv {F : C ⥤ C} {X : C} : (CYEF X ⟶ (F ⋙ GEF)) ≃ Global ((F ⋙ GEF).obj X)
+where
+  toFun     := globalTransformationToGlobalGlobalValue
+  invFun    := globalGlobalValueToGlobalTransformation
+  left_inv  := fun τX => (left_inverse  τX).symm
+  right_inv := fun τX => (right_inverse τX).symm
 \end{lstlisting}
 
 This equivalence provides a completely pointfree and logically verified dictionary for evaluating and constructing natural transformations in functional categories.
@@ -276,12 +301,12 @@ In standard mathematics, functor composition is strictly associative. In Lean 4,
 represented as distinct abstract syntax trees. They are \emph{isomorphic} via 
 \texttt{Category.assoc}, but they are not \emph{definitionally equal}. 
 
-When writing the proof of \texttt{coEndoYonedaLemma2}, this limitation prevents standard
+When writing the proof of \texttt{left\_inverse}, this limitation prevents standard
 term-rewriting tactics like \texttt{simp} from effortlessly reducing deeply nested compositions.
 
 \subsection{Constructing Equality Chains}
 To circumvent the strict type-checker without resorting to manual casts (such as \texttt{eqToHom}),
-the proof for \texttt{coEndoYonedaLemma2} abandons the monolithic \texttt{simp} approach in favor of
+the proof for \texttt{left\_inverse} abandons the monolithic \texttt{simp} approach in favor of
 explicit equality chains acting on the natural transformation components.
 
 By utilizing \texttt{Eq.trans} and \texttt{congr\_arg}, we explicitly guide the type checker through
@@ -289,17 +314,16 @@ the unit laws and naturality squares:
 
 \begin{lstlisting}[basicstyle=\tiny]
   have h1 : 
-    tau.app Y = 
-      tau.app Y ≫ 𝟙 ((GF_def FF).obj (F.obj Y)) := 
-        (Category.comp_id (tau.app Y)).symm
+    τX.app Y = τX.app Y ≫ 𝟙 ((GEF_def Φ).obj (F.obj Y)) := 
+      (Category.comp_id (τX.app Y)).symm
   have h2 : 
-    𝟙 ((GF_def FF).obj (F.obj Y)) = 
-      gammaeta.app ((GF_def FF).obj (F.obj Y)) ≫ gammamu.app (F.obj Y) :=
-        (gamma_left_unit (F.obj Y)).symm
+    𝟙 ((GEF_def Φ).obj (F.obj Y)) = 
+      γη.app ((GEF_def Φ).obj (F.obj Y)) ≫ γμ.app (F.obj Y) :=
+        (γ_left_unit (F.obj Y)).symm
   have h_left_unit : 
-    tau.app Y = 
-      tau.app Y ≫ (gammaeta.app ((GF_def FF).obj (F.obj Y)) ≫ gammamu.app (F.obj Y)) :=
-        Eq.trans h1 (congr_arg (fun g => tau.app Y ≫ g) h2)
+    τX.app Y = 
+      τX.app Y ≫ (γη.app ((GEF_def Φ).obj (F.obj Y)) ≫ γμ.app (F.obj Y)) :=
+        Eq.trans h1 (congr_arg (τX.app Y ≫ .) h2)
 \end{lstlisting}
 
 This localized approach bypasses the rigid typing of the $\longrightarrow$ category morphisms by
