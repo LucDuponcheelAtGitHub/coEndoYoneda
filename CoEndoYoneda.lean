@@ -143,14 +143,14 @@ theorem GF_map_eq_φ {X Y : C} (f : X ⟶ Y) : (GEF_def Φ).map f = φ (. ≫ f)
 -- given a natural transformation of type `CYEF Z ⟶ F`
 -- yields a natural transformation of type `CYEF Z ⟶ (F ⋙ GEF)`
 @[simps]
-def transformationToGlobalTransformation {F : C ⥤ C} {Z : C} (τZ : CYEF Z ⟶ F) :
+def transformationToGlobalTransformation {F : C ⥤ C} {Z : C} (τX : CYEF Z ⟶ F) :
     CYEF Z ⟶ (F ⋙ GEF) where
-  app Y := τZ.app Y ≫ γη.app (F.obj Y)
+  app Y := τX.app Y ≫ γη.app (F.obj Y)
   naturality _ _ h := by
     dsimp
     have h_nat := γη.naturality (F.map h)
     dsimp at h_nat
-    erw [τZ.naturality_assoc, h_nat]
+    erw [τX.naturality_assoc, h_nat]
     rw [Category.assoc]
     rfl
 
@@ -173,31 +173,31 @@ def globalValueToGlobalTransformation {F : C ⥤ C} {X : C} (gfx : Global (F.obj
         (gfx ≫ F.map f) ≫ F.map h
     rw [F.map_comp, Category.assoc]
 
--- 'transformationToGlobalTransformation τZ' with `τZ` of type `CYEF Z ⟶ F`
--- can be defined in terms of global value 'φ (fun _ => 𝟙 Z) ≫ τZ.app Z'
-theorem coEndoYonedaLemma {F : C ⥤ C} {Z : C} (τZ : CYEF Z ⟶ F) :
-  transformationToGlobalTransformation τZ =
-    globalValueToGlobalTransformation (φ (fun _ => 𝟙 Z) ≫ τZ.app Z) := by
+-- 'transformationToGlobalTransformation τZ' with `τX` of type `CYEF Z ⟶ F`
+-- can be defined in terms of global value 'φ (fun _ => 𝟙 Z) ≫ τX.app Z'
+theorem coEndoYonedaLemma {F : C ⥤ C} {Z : C} (τX : CYEF Z ⟶ F) :
+  transformationToGlobalTransformation τX =
+    globalValueToGlobalTransformation (φ (fun _ => 𝟙 Z) ≫ τX.app Z) := by
   ext Y
   dsimp [transformationToGlobalTransformation, globalValueToGlobalTransformation]
-  erw [γη.naturality (τZ.app Y)]
+  erw [γη.naturality (τX.app Y)]
   erw [γη_φ (Z ⟶ Y)]
-  erw [GF_map_eq_φ (τZ.app Y)]
+  erw [GF_map_eq_φ (τX.app Y)]
   erw [φ_comp]
   congr 1
   ext f
   dsimp only [CYEF, CYEF_def, GEF, GEF_def, CYF, coyoneda, yoneda, Functor.comp_obj, Functor.comp_map]
   have step1 :
-    (φ (fun _ => 𝟙 Z) ≫ τZ.app Z) ≫ F.map f =
-      φ (X := PUnit) (Y := Z ⟶ Z) (fun _ => 𝟙 Z) ≫ (τZ.app Z ≫ F.map f) :=
+    (φ (fun _ => 𝟙 Z) ≫ τX.app Z) ≫ F.map f =
+      φ (X := PUnit) (Y := Z ⟶ Z) (fun _ => 𝟙 Z) ≫ (τX.app Z ≫ F.map f) :=
         Category.assoc _ _ _
   have step2 :
-    φ (fun _ => 𝟙 Z) ≫ (τZ.app Z ≫ F.map f) = φ (fun _ => 𝟙 Z) ≫ ((CYEF Z).map f ≫ τZ.app Y) :=
+    φ (fun _ => 𝟙 Z) ≫ (τX.app Z ≫ F.map f) = φ (fun _ => 𝟙 Z) ≫ ((CYEF Z).map f ≫ τX.app Y) :=
       congr_arg
-        (φ (C := C) (X := PUnit) (Y := Z ⟶ Z) (fun _ => 𝟙 Z) ≫ .) (τZ.naturality f).symm
+        (φ (C := C) (X := PUnit) (Y := Z ⟶ Z) (fun _ => 𝟙 Z) ≫ .) (τX.naturality f).symm
   have step3 :
-    φ (fun _ => 𝟙 Z) ≫ ((CYEF Z).map f ≫ τZ.app Y) =
-      (φ (X := PUnit) (Y := Z ⟶ Z) (fun _ => 𝟙 Z) ≫ (CYEF Z).map f) ≫ τZ.app Y :=
+    φ (fun _ => 𝟙 Z) ≫ ((CYEF Z).map f ≫ τX.app Y) =
+      (φ (X := PUnit) (Y := Z ⟶ Z) (fun _ => 𝟙 Z) ≫ (CYEF Z).map f) ≫ τX.app Y :=
         (Category.assoc _ _ _).symm
   have step4Helper :
     φ (fun _ => 𝟙 Z) ≫ (CYEF Z).map f =
@@ -211,8 +211,8 @@ theorem coEndoYonedaLemma {F : C ⥤ C} {Z : C} (τZ : CYEF Z ⟶ F) :
         ext _
         exact Category.id_comp f
   have step4 :
-    (φ (fun _ => 𝟙 Z) ≫ (CYEF Z).map f) ≫ τZ.app Y = φ (fun _ => f) ≫ τZ.app Y :=
-      congr_arg (. ≫ τZ.app Y) step4Helper
+    (φ (fun _ => 𝟙 Z) ≫ (CYEF Z).map f) ≫ τX.app Y = φ (fun _ => f) ≫ τX.app Y :=
+      congr_arg (. ≫ τX.app Y) step4Helper
   exact (Eq.trans step1 (Eq.trans step2 (Eq.trans step3 step4))).symm
 
 -- given a natural transformation of type `CYEF X ⟶ (F ⋙ GEF)`
@@ -242,61 +242,61 @@ def globalGlobalValueToGlobalTransformation
     rw [F.map_comp, GEF.map_comp, Category.assoc]
 
 -- 'τZ' of type `CYEF Z ⟶ (F ⋙ GEF)`
--- can be defined in terms of global value 'φ (fun _ => 𝟙 Z) ≫ τZ.app Z'
-theorem left_inverse {F : C ⥤ C} {Z : C} (τZ : CYEF Z ⟶ (F ⋙ GEF)) :
-  τZ =
-    globalGlobalValueToGlobalTransformation (φ (fun _ => 𝟙 Z) ≫ τZ.app Z) := by
+-- can be defined in terms of global value 'φ (fun _ => 𝟙 Z) ≫ τX.app Z'
+theorem left_inverse {F : C ⥤ C} {Z : C} (τX : CYEF Z ⟶ (F ⋙ GEF)) :
+  τX =
+    globalGlobalValueToGlobalTransformation (φ (fun _ => 𝟙 Z) ≫ τX.app Z) := by
   ext Y
   dsimp [globalGlobalValueToGlobalTransformation]
-  have h1 : τZ.app Y = τZ.app Y ≫ 𝟙 ((GEF_def Φ).obj (F.obj Y)) := (Category.comp_id (τZ.app Y)).symm
+  have h1 : τX.app Y = τX.app Y ≫ 𝟙 ((GEF_def Φ).obj (F.obj Y)) := (Category.comp_id (τX.app Y)).symm
   have h2 : 𝟙 ((GEF_def Φ).obj (F.obj Y)) = γη.app ((GEF_def Φ).obj (F.obj Y)) ≫ γμ.app (F.obj Y) :=
     (γ_left_unit (F.obj Y)).symm
-  have h_left_unit : τZ.app Y = τZ.app Y ≫ (γη.app ((GEF_def Φ).obj (F.obj Y)) ≫ γμ.app (F.obj Y)) :=
-    Eq.trans h1 (congr_arg (τZ.app Y ≫ .) h2)
-  have h_stepA : τZ.app Y = (τZ.app Y ≫ γη.app ((GEF_def Φ).obj (F.obj Y))) ≫ γμ.app (F.obj Y) :=
+  have h_left_unit : τX.app Y = τX.app Y ≫ (γη.app ((GEF_def Φ).obj (F.obj Y)) ≫ γμ.app (F.obj Y)) :=
+    Eq.trans h1 (congr_arg (τX.app Y ≫ .) h2)
+  have h_stepA : τX.app Y = (τX.app Y ≫ γη.app ((GEF_def Φ).obj (F.obj Y))) ≫ γμ.app (F.obj Y) :=
     Eq.trans h_left_unit (Category.assoc _ _ _).symm
-  have h_nat_γη : τZ.app Y ≫ γη.app ((GEF_def Φ).obj (F.obj Y)) =
-    γη.app ((CYEF Z).obj Y) ≫ (GEF_def Φ).map (τZ.app Y) :=
-      γη.naturality (τZ.app Y)
-  have h_stepB : τZ.app Y = (γη.app ((CYEF Z).obj Y) ≫ (GEF_def Φ).map (τZ.app Y)) ≫ γμ.app (F.obj Y)
+  have h_nat_γη : τX.app Y ≫ γη.app ((GEF_def Φ).obj (F.obj Y)) =
+    γη.app ((CYEF Z).obj Y) ≫ (GEF_def Φ).map (τX.app Y) :=
+      γη.naturality (τX.app Y)
+  have h_stepB : τX.app Y = (γη.app ((CYEF Z).obj Y) ≫ (GEF_def Φ).map (τX.app Y)) ≫ γμ.app (F.obj Y)
     := Eq.trans h_stepA (congr_arg (. ≫ γμ.app (F.obj Y)) h_nat_γη)
   have h_γη_φ : γη.app ((CYEF Z).obj Y) = φ (fun w => φ (fun _ => w)) := γη_φ (Z ⟶ Y)
-  have h_stepC : τZ.app Y =
+  have h_stepC : τX.app Y =
     (φ (fun f => φ (C := C) (X := PUnit) (Y := Z ⟶ Y) (fun _ => f)) ≫
-      (GEF_def Φ).map (τZ.app Y)) ≫
+      (GEF_def Φ).map (τX.app Y)) ≫
         γμ.app (F.obj Y) :=
           Eq.trans h_stepB
-            (congr_arg (fun g => (g ≫ (GEF_def Φ).map (τZ.app Y)) ≫ γμ.app (F.obj Y)) h_γη_φ)
-  have h_stepD : τZ.app Y =
-    (φ (fun w => φ (fun _ => w)) ≫ φ (. ≫ τZ.app Y)) ≫ γμ.app (F.obj Y) :=
+            (congr_arg (fun g => (g ≫ (GEF_def Φ).map (τX.app Y)) ≫ γμ.app (F.obj Y)) h_γη_φ)
+  have h_stepD : τX.app Y =
+    (φ (fun w => φ (fun _ => w)) ≫ φ (. ≫ τX.app Y)) ≫ γμ.app (F.obj Y) :=
       Eq.trans h_stepC
         (congr_arg (fun g => (φ (fun w => φ (fun _ => w)) ≫ g) ≫
-          γμ.app (F.obj Y)) (GF_map_eq_φ (τZ.app Y)))
+          γμ.app (F.obj Y)) (GF_map_eq_φ (τX.app Y)))
   have h_φ_comp :
-    φ (fun f => φ (fun _ => f)) ≫ φ (. ≫ τZ.app Y) =
-      φ (C := C) (fun f => φ (X := PUnit) (fun _ => f) ≫ τZ.app Y) :=
+    φ (fun f => φ (fun _ => f)) ≫ φ (. ≫ τX.app Y) =
+      φ (C := C) (fun f => φ (X := PUnit) (fun _ => f) ≫ τX.app Y) :=
         φ_comp _ _
   have h_stepE :
-    τZ.app Y =
-      φ (fun f => φ (fun _ => f) ≫ τZ.app Y) ≫ γμ.app (F.obj Y) :=
+    τX.app Y =
+      φ (fun f => φ (fun _ => f) ≫ τX.app Y) ≫ γμ.app (F.obj Y) :=
         Eq.trans h_stepD (congr_arg (. ≫ γμ.app (F.obj Y)) h_φ_comp)
   have h_inner_eq :
-    φ (fun f => φ (fun _ => f) ≫ τZ.app Y) =
-      φ (C := C) ((φ (X := PUnit) (fun _ => 𝟙 Z) ≫ τZ.app Z) ≫ (F ⋙ GEF).map .) := by
+    φ (fun f => φ (fun _ => f) ≫ τX.app Y) =
+      φ (C := C) ((φ (X := PUnit) (fun _ => 𝟙 Z) ≫ τX.app Z) ≫ (F ⋙ GEF).map .) := by
     congr 1
     ext f
     dsimp only
       [CYEF, CYEF_def, GEF, GEF_def, CYF, coyoneda, yoneda, Functor.comp_obj, Functor.comp_map]
     have step1 :
-      (φ (fun _ => 𝟙 Z) ≫ τZ.app Z) ≫ (F ⋙ GEF).map f =
-        φ (X := PUnit) (fun _ => 𝟙 Z) ≫ (τZ.app Z ≫ (F ⋙ GEF).map f) := Category.assoc _ _ _
+      (φ (fun _ => 𝟙 Z) ≫ τX.app Z) ≫ (F ⋙ GEF).map f =
+        φ (X := PUnit) (fun _ => 𝟙 Z) ≫ (τX.app Z ≫ (F ⋙ GEF).map f) := Category.assoc _ _ _
     have step2 :
-      φ (fun _ => 𝟙 Z) ≫ (τZ.app Z ≫ (F ⋙ GEF).map f) =
-        φ (fun _ => 𝟙 Z) ≫ ((CYEF Z).map f ≫ τZ.app Y) :=
-          congr_arg (φ (X := PUnit) (fun _ => 𝟙 Z) ≫ .) (τZ.naturality f).symm
+      φ (fun _ => 𝟙 Z) ≫ (τX.app Z ≫ (F ⋙ GEF).map f) =
+        φ (fun _ => 𝟙 Z) ≫ ((CYEF Z).map f ≫ τX.app Y) :=
+          congr_arg (φ (X := PUnit) (fun _ => 𝟙 Z) ≫ .) (τX.naturality f).symm
     have step3 :
-      φ (fun _ => 𝟙 Z) ≫ ((CYEF Z).map f ≫ τZ.app Y) =
-        (φ (X := PUnit) (fun _ => 𝟙 Z) ≫ (CYEF Z).map f) ≫ τZ.app Y := (Category.assoc _ _ _).symm
+      φ (fun _ => 𝟙 Z) ≫ ((CYEF Z).map f ≫ τX.app Y) =
+        (φ (X := PUnit) (fun _ => 𝟙 Z) ≫ (CYEF Z).map f) ≫ τX.app Y := (Category.assoc _ _ _).symm
     have step4Helper :
       φ (fun _ => 𝟙 Z) ≫ (CYEF Z).map f =
         φ (X := PUnit) (fun _ => f) := by
@@ -310,12 +310,12 @@ theorem left_inverse {F : C ⥤ C} {Z : C} (τZ : CYEF Z ⟶ (F ⋙ GEF)) :
           ext _
           exact Category.id_comp f
     have step4 :
-      (φ (fun _ => 𝟙 Z) ≫ (CYEF Z).map f) ≫ τZ.app Y =
-        φ (fun _ => f) ≫ τZ.app Y := congr_arg (. ≫ τZ.app Y) step4Helper
+      (φ (fun _ => 𝟙 Z) ≫ (CYEF Z).map f) ≫ τX.app Y =
+        φ (fun _ => f) ≫ τX.app Y := congr_arg (. ≫ τX.app Y) step4Helper
     exact (Eq.trans step1 (Eq.trans step2 (Eq.trans step3 step4))).symm
   have h_final :
-    τZ.app Y =
-      φ (fun f => (φ (fun _ => 𝟙 Z) ≫ τZ.app Z) ≫ (F ⋙ GEF).map f) ≫ γμ.app (F.obj Y) :=
+    τX.app Y =
+      φ (fun f => (φ (fun _ => 𝟙 Z) ≫ τX.app Z) ≫ (F ⋙ GEF).map f) ≫ γμ.app (F.obj Y) :=
         Eq.trans h_stepE (congr_arg (. ≫ γμ.app (F.obj Y)) h_inner_eq)
   exact h_final
 
@@ -349,7 +349,7 @@ theorem φ_γμ {X : C} (ggfx : Global ((GEF_def Φ).obj X)) :
 theorem right_inverse {F : C ⥤ C} {X : C} :
   ∀ (ggfx : Global ((F ⋙ GEF).obj X)),
     ggfx =
-      (fun τZ => (φ fun _ => 𝟙 X) ≫ τZ.app X) (globalGlobalValueToGlobalTransformation ggfx) :=
+      (fun τX => (φ fun _ => 𝟙 X) ≫ τX.app X) (globalGlobalValueToGlobalTransformation ggfx) :=
   fun (ggfx : Global ((F ⋙ GEF).obj X)) ↦ by
     change
       ggfx = φ (fun _ => 𝟙 X) ≫
@@ -373,7 +373,7 @@ theorem right_inverse {F : C ⥤ C} {X : C} :
 -- equivalence
 def coEndoYonedaEquiv {F : C ⥤ C} {X : C} : (CYEF X ⟶ (F ⋙ GEF)) ≃ Global ((F ⋙ GEF).obj X)
 where
-  toFun     :=  globalTransformationToGlobalGlobalValue
+  toFun     := globalTransformationToGlobalGlobalValue
   invFun    := globalGlobalValueToGlobalTransformation
   left_inv  := fun τX => (left_inverse  τX).symm
   right_inv := fun τX => (right_inverse τX).symm
