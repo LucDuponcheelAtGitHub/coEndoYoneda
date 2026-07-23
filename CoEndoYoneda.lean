@@ -142,14 +142,17 @@ theorem GF_map_eq_φ {X Y : C} (f : X ⟶ Y) : GEF.map f = φ (. ≫ f) :=
   CYEF_map_eq_φ f
 
 -- given a natural transformation of type `CYEF X ⟶ (F ⋙ GEF)`
--- yields a global global value of type `Global (GEF.obj (F.obj X)))`
+-- yields a global global value of type `Global ((F ⋙ GEF).obj X)`
 def τx2ggfx {F : C ⥤ C} {X : C} (τx : CYEF X ⟶ F ⋙ GEF) :
   Global ((F ⋙ GEF).obj X) :=
     let ggfx := φ (fun _ => 𝟙 X) ≫ τx.app X
     ggfx
 
--- given a global global value of type `Global (GEF.obj (F.obj X)))`
+-- given a global global value of type `Global (GEF.obj (F.obj X))`
 -- yields a natural transformation of type `CYEF X ⟶ (F ⋙ GEF)`
+--
+-- TODO : type system complains when using `Global ((F ⋙ GEF).obj X)` (?)
+--
 @[simps]
 def ggfx2τx
   {F : C ⥤ C} {X : C} (ggfx : Global (GEF.obj (F.obj X))) : CYEF X ⟶ (F ⋙ GEF) :=
