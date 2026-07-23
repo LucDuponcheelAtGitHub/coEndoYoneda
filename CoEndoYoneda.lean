@@ -176,8 +176,7 @@ def ggfx2τX
 -- 'τX' of type `CYEF X ⟶ (F ⋙ GEF)`
 -- can be defined in terms of global value 'φ (fun _ => 𝟙 X) ≫ τX.app X'
 theorem left_inverse {F : C ⥤ C} {X : C} (τX : CYEF X ⟶ (F ⋙ GEF)) :
-  τX =
-    ggfx2τX (φ (fun _ => 𝟙 X) ≫ τX.app X) := by
+    τX = ggfx2τX (φ (fun _ => 𝟙 X) ≫ τX.app X) := by
   ext Y
   dsimp [ggfx2τX]
   have h_stepB :
@@ -245,7 +244,7 @@ theorem left_inverse {F : C ⥤ C} {X : C} (τX : CYEF X ⟶ (F ⋙ GEF)) :
 
 -- relating γμ and φ (also involves (GEF_def Φ).obj)
 theorem φ_γμ {X : C} (ggfx : Global ((GEF_def Φ).obj X)) :
-    φ (fun _ => ggfx) ≫ γμ.app X = ggfx := by
+    φ (fun (_ : PUnit) => ggfx) ≫ γμ.app X = ggfx := by
   have h_nat : ggfx ≫ γη.app ((GEF_def Φ).obj X) =
     γη.app (Φ.obj PUnit) ≫ (GEF_def Φ).map ggfx := γη.naturality ggfx
   erw [GF_map_eq_φ ggfx] at h_nat
@@ -270,26 +269,23 @@ theorem φ_γμ {X : C} (ggfx : Global ((GEF_def Φ).obj X)) :
   erw [h_g_eta] at h_final
   exact h_final
 
-theorem right_inverse {F : C ⥤ C} {X : C} :
-  ∀ (ggfx : Global ((F ⋙ GEF).obj X)),
-    ggfx =
-      (fun τX => (φ fun _ => 𝟙 X) ≫ τX.app X) (ggfx2τX ggfx) :=
-  fun (ggfx : Global ((F ⋙ GEF).obj X)) ↦ by
-    change
-      ggfx = φ (fun _ => 𝟙 X) ≫
-        (φ (Y := Global (GEF.obj (F.obj X))) (ggfx ≫ (F ⋙ GEF).map .) ≫
-          γμ.app (F.obj X))
-    rw [← Category.assoc]
-    have h1 :
-      φ (fun _ => 𝟙 X) ≫ φ (Y := Global (GEF.obj (F.obj X))) (ggfx ≫ (F ⋙ GEF).map .) =
-        φ (C := C) (X := PUnit) (Y := Global (GEF.obj (F.obj X)))
-          (fun _ => ggfx ≫ (F ⋙ GEF).map (𝟙 X)) := φ_comp _ _
-    rw [h1]
-    have h2 :
-      φ (Y := Global (GEF.obj (F.obj X))) (fun _ => ggfx ≫ (F ⋙ GEF).map (𝟙 X)) =
-        φ (C := C) (X := PUnit) (fun _ => ggfx) := by grind
-    rw [h2]
-    exact (φ_γμ ggfx).symm
+theorem right_inverse {F : C ⥤ C} {X : C} (ggfx : Global ((F ⋙ GEF).obj X)) :
+    ggfx = (fun τX => (φ fun _ => 𝟙 X) ≫ τX.app X) (ggfx2τX ggfx) := by
+  change
+    ggfx = φ (fun _ => 𝟙 X) ≫
+      (φ (Y := Global (GEF.obj (F.obj X))) (ggfx ≫ (F ⋙ GEF).map .) ≫
+        γμ.app (F.obj X))
+  rw [← Category.assoc]
+  have h1 :
+    φ (fun _ => 𝟙 X) ≫ φ (Y := Global (GEF.obj (F.obj X))) (ggfx ≫ (F ⋙ GEF).map .) =
+      φ (C := C) (X := PUnit) (Y := Global (GEF.obj (F.obj X)))
+        (fun _ => ggfx ≫ (F ⋙ GEF).map (𝟙 X)) := φ_comp _ _
+  rw [h1]
+  have h2 :
+    φ (Y := Global (GEF.obj (F.obj X))) (fun _ => ggfx ≫ (F ⋙ GEF).map (𝟙 X)) =
+      φ (C := C) (X := PUnit) (fun _ => ggfx) := by grind
+  rw [h2]
+  exact (φ_γμ ggfx).symm
 
 -- equivalence
 def coEndoYonedaEquiv {F : C ⥤ C} {X : C} : (CYEF X ⟶ (F ⋙ GEF)) ≃ Global ((F ⋙ GEF).obj X)

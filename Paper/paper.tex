@@ -178,7 +178,7 @@ class FunctionalCategory (C : Type (u + 1)) extends LargeCategory.{u} C where
       by intros; rfl
 
   γη_φ :
-    ∀ (Z : Type u), γη.app (Φ.obj Z) = φ (fun z => φ (fun _ => z)) :=
+    ∀ (X : Type u), γη.app (Φ.obj X) = φ (fun x => φ (fun _ => x)) :=
       by intros; rfl
 \end{lstlisting}
 \vspace{6pt}
@@ -220,8 +220,10 @@ We construct a designated global element from a designated natural transformatio
 
 \vspace{6pt}
 \begin{lstlisting}[basicstyle=\tiny]
-def globalTransformationToGlobalGlobalValue {F : C ⥤ C} {X : C} (τX : CYEF X ⟶ F ⋙ GEF) :
-  Global ((F ⋙ GEF).obj X) := φ (fun _ => 𝟙 X) ≫ τX.app X
+def τX2ggfx {F : C ⥤ C} {X : C} (τX : CYEF X ⟶ F ⋙ GEF) :
+  Global ((F ⋙ GEF).obj X) :=
+    let ggfx := φ (fun _ => 𝟙 X) ≫ τX.app X
+    ggfx
 \end{lstlisting}
 \vspace{6pt}
 
@@ -230,10 +232,13 @@ follows
 
 \vspace{6pt}
 \begin{lstlisting}[basicstyle=\tiny]
-def globalGlobalValueToGlobalTransformation
-  {F : C ⥤ C} {X : C} (ggfx : Global (GEF.obj (F.obj X))) : CYEF X ⟶ (F ⋙ GEF) where
-  app Y := φ (ggfx ≫ (F ⋙ GEF).map .) ≫ γμ.app (F.obj Y)
-  naturality _ _ h := by ...
+def ggfx2τX
+  {F : C ⥤ C} {X : C} (ggfx : Global (GEF.obj (F.obj X))) : CYEF X ⟶ (F ⋙ GEF) :=
+    let τX : CYEF X ⟶ F ⋙ GEF := {
+      app Y := φ (ggfx ≫ (F ⋙ GEF).map .) ≫ γμ.app (F.obj Y)
+      naturality _ _ h := ...
+    }
+    τX
 \end{lstlisting}
 \vspace{6pt}
 
@@ -241,9 +246,8 @@ We formulate (and prove, not shown) a left inverse theorem as follows
 
 \vspace{6pt}
 \begin{lstlisting}[basicstyle=\tiny]
-theorem left_inverse {F : C ⥤ C} {Z : C} (τX : CYEF Z ⟶ (F ⋙ GEF)) :
-  τX =
-    globalGlobalValueToGlobalTransformation (φ (fun _ => 𝟙 Z) ≫ τX.app Z) := by ...
+theorem left_inverse {F : C ⥤ C} {X : C} (τX : CYEF X ⟶ (F ⋙ GEF)) :
+    τX = ggfx2τX (φ (fun _ => 𝟙 X) ≫ τX.app X) := by ...
 \end{lstlisting}
 
 We formulate (and prove, not shown) a right inverse theorem as follows
@@ -251,8 +255,14 @@ We formulate (and prove, not shown) a right inverse theorem as follows
 \vspace{6pt}
 \begin{lstlisting}[basicstyle=\tiny]
 theorem φ_γμ {X : C} (ggfx : Global ((GEF_def Φ).obj X)) :
-    φ (fun _ => ggfx) ≫ γμ.app X = 
-      ggfx := by ...
+  φ (fun (_ : PUnit) => ggfx) ≫ γμ.app X = ggfx := by
+\end{lstlisting}
+\vspace{6pt}
+
+\vspace{6pt}
+\begin{lstlisting}[basicstyle=\tiny]
+theorem right_inverse {F : C ⥤ C} {X : C} (ggfx : Global ((F ⋙ GEF).obj X)) :
+    ggfx = (fun τX => (φ fun _ => 𝟙 X) ≫ τX.app X) (ggfx2τX ggfx) := by
 \end{lstlisting}
 \vspace{6pt}
 
@@ -265,8 +275,8 @@ the main equivalence.
 \begin{lstlisting}[basicstyle=\tiny]
 def coEndoYonedaEquiv {F : C ⥤ C} {X : C} : 
   (CYEF X ⟶ (F ⋙ GEF)) ≃ Global ((F ⋙ GEF).obj X) where
-  toFun     := globalTransformationToGlobalGlobalValue
-  invFun    := globalGlobalValueToGlobalTransformation
+  toFun     := τX2ggfx
+  invFun    := ggfx2τX
   left_inv  := fun τX => (left_inverse  τX).symm
   right_inv := fun τX => (right_inverse τX).symm
 \end{lstlisting}
