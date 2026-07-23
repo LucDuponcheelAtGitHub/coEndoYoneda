@@ -58,7 +58,7 @@ class FunctionalCategory (C : Type (u + 1)) extends LargeCategory.{u} C where
 
   -- relating γη and φ
   -- (also involves Φ.obj, recall that φ is defined in terms of Φ.map)
-  γη_φ : ∀ (Z : Type u), γη.app (Φ.obj Z) = φ (fun z => φ (fun _ => z)) := by
+  γη_φ : ∀ (X : Type u), γη.app (Φ.obj X) = φ (fun z => φ (fun _ => z)) := by
     intros
     rfl
 
@@ -168,20 +168,20 @@ def globalGlobalValueToGlobalTransformation
     change ggfx ≫ GEF.map (F.map (f ≫ h)) = (ggfx ≫ GEF.map (F.map f)) ≫ GEF.map (F.map h)
     rw [F.map_comp, GEF.map_comp, Category.assoc]
 
--- 'τZ' of type `CYEF Z ⟶ (F ⋙ GEF)`
--- can be defined in terms of global value 'φ (fun _ => 𝟙 Z) ≫ τX.app Z'
-theorem left_inverse {F : C ⥤ C} {Z : C} (τX : CYEF Z ⟶ (F ⋙ GEF)) :
+-- 'τX' of type `CYEF X ⟶ (F ⋙ GEF)`
+-- can be defined in terms of global value 'φ (fun _ => 𝟙 X) ≫ τX.app X'
+theorem left_inverse {F : C ⥤ C} {X : C} (τX : CYEF X ⟶ (F ⋙ GEF)) :
   τX =
-    globalGlobalValueToGlobalTransformation (φ (fun _ => 𝟙 Z) ≫ τX.app Z) := by
+    globalGlobalValueToGlobalTransformation (φ (fun _ => 𝟙 X) ≫ τX.app X) := by
   ext Y
   dsimp [globalGlobalValueToGlobalTransformation]
   have h_stepB :
     τX.app Y =
-      (γη.app ((CYEF Z).obj Y) ≫ (GEF_def Φ).map (τX.app Y)) ≫ γμ.app (F.obj Y) := by
+      (γη.app ((CYEF X).obj Y) ≫ (GEF_def Φ).map (τX.app Y)) ≫ γμ.app (F.obj Y) := by
         grind [γ_left_unit (F.obj Y), γη.naturality (τX.app Y)]
-  have h_γη_φ : γη.app ((CYEF Z).obj Y) = φ (fun w => φ (fun _ => w)) := γη_φ (Z ⟶ Y)
+  have h_γη_φ : γη.app ((CYEF X).obj Y) = φ (fun w => φ (fun _ => w)) := γη_φ (X ⟶ Y)
   have h_stepC : τX.app Y =
-    (φ (fun f => φ (C := C) (X := PUnit) (Y := Z ⟶ Y) (fun _ => f)) ≫
+    (φ (fun f => φ (C := C) (X := PUnit) (Y := X ⟶ Y) (fun _ => f)) ≫
       (GEF_def Φ).map (τX.app Y)) ≫
         γμ.app (F.obj Y) :=
           Eq.trans h_stepB
@@ -201,40 +201,40 @@ theorem left_inverse {F : C ⥤ C} {Z : C} (τX : CYEF Z ⟶ (F ⋙ GEF)) :
         Eq.trans h_stepD (congr_arg (. ≫ γμ.app (F.obj Y)) h_φ_comp)
   have h_inner_eq :
     φ (fun f => φ (fun _ => f) ≫ τX.app Y) =
-      φ (C := C) ((φ (X := PUnit) (fun _ => 𝟙 Z) ≫ τX.app Z) ≫ (F ⋙ GEF).map .) := by
+      φ (C := C) ((φ (X := PUnit) (fun _ => 𝟙 X) ≫ τX.app X) ≫ (F ⋙ GEF).map .) := by
     congr 1
     ext f
     dsimp only
       [CYEF, CYEF_def, GEF, GEF_def, CYF, coyoneda, yoneda, Functor.comp_obj, Functor.comp_map]
     have step1 :
-      (φ (fun _ => 𝟙 Z) ≫ τX.app Z) ≫ (F ⋙ GEF).map f =
-        φ (X := PUnit) (fun _ => 𝟙 Z) ≫ (τX.app Z ≫ (F ⋙ GEF).map f) := Category.assoc _ _ _
+      (φ (fun _ => 𝟙 X) ≫ τX.app X) ≫ (F ⋙ GEF).map f =
+        φ (X := PUnit) (fun _ => 𝟙 X) ≫ (τX.app X ≫ (F ⋙ GEF).map f) := Category.assoc _ _ _
     have step2 :
-      φ (fun _ => 𝟙 Z) ≫ (τX.app Z ≫ (F ⋙ GEF).map f) =
-        φ (fun _ => 𝟙 Z) ≫ ((CYEF Z).map f ≫ τX.app Y) :=
-          congr_arg (φ (X := PUnit) (fun _ => 𝟙 Z) ≫ .) (τX.naturality f).symm
+      φ (fun _ => 𝟙 X) ≫ (τX.app X ≫ (F ⋙ GEF).map f) =
+        φ (fun _ => 𝟙 X) ≫ ((CYEF X).map f ≫ τX.app Y) :=
+          congr_arg (φ (X := PUnit) (fun _ => 𝟙 X) ≫ .) (τX.naturality f).symm
     have step3 :
-      φ (fun _ => 𝟙 Z) ≫ ((CYEF Z).map f ≫ τX.app Y) =
-        (φ (X := PUnit) (fun _ => 𝟙 Z) ≫ (CYEF Z).map f) ≫ τX.app Y := (Category.assoc _ _ _).symm
+      φ (fun _ => 𝟙 X) ≫ ((CYEF X).map f ≫ τX.app Y) =
+        (φ (X := PUnit) (fun _ => 𝟙 X) ≫ (CYEF X).map f) ≫ τX.app Y := (Category.assoc _ _ _).symm
     have step4Helper :
-      φ (fun _ => 𝟙 Z) ≫ (CYEF Z).map f =
+      φ (fun _ => 𝟙 X) ≫ (CYEF X).map f =
         φ (X := PUnit) (fun _ => f) := by
           erw [CYEF_map_eq_φ f]
           have h_φ :
-            φ (fun _ => 𝟙 Z) ≫ φ (. ≫ f) =
-              φ (C := C) (X := PUnit) (fun _ => 𝟙 Z ≫ f) :=
-                φ_comp (fun _ => 𝟙 Z) (. ≫ f)
+            φ (fun _ => 𝟙 X) ≫ φ (. ≫ f) =
+              φ (C := C) (X := PUnit) (fun _ => 𝟙 X ≫ f) :=
+                φ_comp (fun _ => 𝟙 X) (. ≫ f)
           erw [h_φ]
           congr 1
           ext _
           exact Category.id_comp f
     have step4 :
-      (φ (fun _ => 𝟙 Z) ≫ (CYEF Z).map f) ≫ τX.app Y =
+      (φ (fun _ => 𝟙 X) ≫ (CYEF X).map f) ≫ τX.app Y =
         φ (fun _ => f) ≫ τX.app Y := congr_arg (. ≫ τX.app Y) step4Helper
     exact (Eq.trans step1 (Eq.trans step2 (Eq.trans step3 step4))).symm
   have h_final :
     τX.app Y =
-      φ (fun f => (φ (fun _ => 𝟙 Z) ≫ τX.app Z) ≫ (F ⋙ GEF).map f) ≫ γμ.app (F.obj Y) :=
+      φ (fun f => (φ (fun _ => 𝟙 X) ≫ τX.app X) ≫ (F ⋙ GEF).map f) ≫ γμ.app (F.obj Y) :=
         Eq.trans h_stepE (congr_arg (. ≫ γμ.app (F.obj Y)) h_inner_eq)
   exact h_final
 
