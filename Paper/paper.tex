@@ -275,31 +275,31 @@ def coEndoYonedaEquiv {F : C ⥤ C} {X : C} :
 This equivalence provides a completely pointfree and logically verified method for evaluating
 and constructing natural transformations in functional categories.
 
-\subsection{A less substantial CoEndoYoneda Lemma}
+% \subsection{A less substantial CoEndoYoneda Lemma}
 
-By the way, we can also formulate a less substantial CoEndoYoneda lemma that does not involve
-$\gamma\mu$.
+% By the way, we can also formulate a less substantial CoEndoYoneda lemma that does not involve
+% $\gamma\mu$.
 
-We construct a designated natural transformation from a designated global element as follows 
+% We construct a designated natural transformation from a designated global element as follows 
 
-\vspace{6pt}
-\begin{lstlisting}[basicstyle=\tiny]
-def globalValueToGlobalTransformation {F : C ⥤ C} {X : C} (gfx : Global (F.obj X)) :
-    CYEF X ⟶ (F ⋙ GEF) where
-  app Y := φ (gfx ≫ F.map .)
-  naturality _ _ h := by ...
-\end{lstlisting}
-\vspace{6pt}
+% \vspace{6pt}
+% \begin{lstlisting}[basicstyle=\tiny]
+% def globalValueToGlobalTransformation {F : C ⥤ C} {X : C} (gfx : Global (F.obj X)) :
+%     CYEF X ⟶ (F ⋙ GEF) where
+%   app Y := φ (gfx ≫ F.map .)
+%   naturality _ _ h := by ...
+% \end{lstlisting}
+% \vspace{6pt}
 
-\texttt{coEndoYonedaLemma} can now be formulated (and proved, not shown) as follows
+% \texttt{coEndoYonedaLemma} can now be formulated (and proved, not shown) as follows
 
-\vspace{6pt}
-\begin{lstlisting}[basicstyle=\tiny]
-theorem coEndoYonedaLemma {F : C ⥤ C} {X : C} (τX : CYEF X ⟶ F) :
-  transformationToGlobalTransformation τX =
-    globalValueToGlobalTransformation (φ (fun _ => 𝟙 X) ≫ τX.app X) := by ...
-\end{lstlisting}
-\vspace{6pt}
+% \vspace{6pt}
+% \begin{lstlisting}[basicstyle=\tiny]
+% theorem coEndoYonedaLemma {F : C ⥤ C} {X : C} (τX : CYEF X ⟶ F) :
+%   transformationToGlobalTransformation τX =
+%     globalValueToGlobalTransformation (φ (fun _ => 𝟙 X) ≫ τX.app X) := by ...
+% \end{lstlisting}
+% \vspace{6pt}
 
 \section{Proof Techniques and Challenges in Lean 4}
 
