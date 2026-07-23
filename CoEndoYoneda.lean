@@ -58,7 +58,7 @@ class FunctionalCategory (C : Type (u + 1)) extends LargeCategory.{u} C where
 
   -- relating γη and φ
   -- (also involves Φ.obj, recall that φ is defined in terms of Φ.map)
-  γη_φ : ∀ (X : Type u), γη.app (Φ.obj X) = φ (fun z => φ (fun _ => z)) := by
+  γη_φ : ∀ (X : Type u), γη.app (Φ.obj X) = φ (fun x => φ (fun _ => x)) := by
     intros
     rfl
 
