@@ -14,17 +14,17 @@ universe u
 abbrev CYF {C : Type (u + 1)} [LargeCategory.{u} C] (X : C) : C ⥤ Type u :=
   coyoneda.obj (op X)
 
--- CoYoneda EndoFunctor for X and T2C
-abbrev CYEF_def {C : Type (u + 1)} [LargeCategory.{u} C] (T2C : Type u ⥤ C) (X : C) : C ⥤ C :=
-  CYF X ⋙ T2C
+-- CoYoneda EndoFunctor for X and Φ
+abbrev CYEF_def {C : Type (u + 1)} [LargeCategory.{u} C] (Φ : Type u ⥤ C) (X : C) : C ⥤ C :=
+  CYF X ⋙ Φ
 
--- Global EndoFunctor definition for T2C
-abbrev GEF_def {C : Type (u + 1)} [LargeCategory.{u} C] (T2C : Type u ⥤ C) : C ⥤ C :=
-  CYEF_def T2C (T2C.obj PUnit)
+-- Global EndoFunctor definition for Φ
+abbrev GEF_def {C : Type (u + 1)} [LargeCategory.{u} C] (Φ : Type u ⥤ C) : C ⥤ C :=
+  CYEF_def Φ (Φ.obj PUnit)
 
--- Global elements for T2C
-abbrev G {C : Type (u + 1)} [LargeCategory.{u} C] (T2C : Type u ⥤ C) (X : C) : Type u :=
-  T2C.obj PUnit ⟶ X
+-- Global elements for Φ
+abbrev G {C : Type (u + 1)} [LargeCategory.{u} C] (Φ : Type u ⥤ C) (X : C) : Type u :=
+  Φ.obj PUnit ⟶ X
 
 class FunctionalCategory (C : Type (u + 1)) extends LargeCategory.{u} C where
   -- Functional Functor
