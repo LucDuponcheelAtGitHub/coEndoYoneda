@@ -10,19 +10,19 @@ open Opposite
 
 universe u
 
--- CoYoneda Functor for X
+-- CoYoneda `Functor` for `X`
 abbrev CYF {C : Type (u + 1)} [LargeCategory.{u} C] (X : C) : C ⥤ Type u :=
   coyoneda.obj (op X)
 
--- CoYoneda EndoFunctor for X and Φ
+-- CoYoneda `EndoFunctor` for `X` and `Φ`
 abbrev CYEF_def {C : Type (u + 1)} [LargeCategory.{u} C] (Φ : Type u ⥤ C) (X : C) : C ⥤ C :=
   CYF X ⋙ Φ
 
--- Global EndoFunctor definition for Φ
+-- Global `EndoFunctor` definition for `Φ`
 abbrev GEF_def {C : Type (u + 1)} [LargeCategory.{u} C] (Φ : Type u ⥤ C) : C ⥤ C :=
   CYEF_def Φ (Φ.obj PUnit)
 
--- Global elements for Φ
+-- Global elements for `Φ`
 abbrev G {C : Type (u + 1)} [LargeCategory.{u} C] (Φ : Type u ⥤ C) (X : C) : Type u :=
   Φ.obj PUnit ⟶ X
 
@@ -47,17 +47,17 @@ class FunctionalCategory (C : Type (u + 1)) extends LargeCategory.{u} C where
   -- γ_right_unit :
   --   ∀ (X : C), (GEF_def Φ).map (γη.app X) ≫ γμ.app X = 𝟙 ((GEF_def Φ).obj X)
 
-  -- Functional Functor Map
+  -- Functional `Functor` `map`
   -- Note that we are into the `ConcreteCategory` realm now
   φ {X Y : Type u} (f : X → Y) : Φ.obj X ⟶ Φ.obj Y := Φ.map (TypeCat.ofHom f)
 
-  -- Functional Functor Map equality
+  -- Functional `Functor` `map` equality
   φ_eq : ∀ {X Y : Type u} (f : X → Y), φ f = Φ.map (TypeCat.ofHom f) := by
     intros
     rfl
 
-  -- relating γη and φ
-  -- (also involves Φ.obj, recall that φ is defined in terms of Φ.map)
+  -- relating `γη` and `φ`
+  -- (also involves `Φ.obj`, recall that `φ` is defined in terms of `Φ.map`)
   γη_φ : ∀ (X : Type u), γη.app (Φ.obj X) = φ (fun x => φ (fun _ => x)) := by
     intros
     rfl
@@ -112,7 +112,7 @@ variable {C : Type (u + 1)} [FunctionalCategory C]
 
 abbrev Global : C → Type u := G Φ
 
--- Functor composition law for φ
+-- `Functor` composition law for `φ`
 @[simp]
 theorem φ_comp {X Y Z : Type u} (f : X → Y) (g : Y → Z) :
     φ f ≫ φ g = (φ (C := C) (fun x => g (f x)) : Φ.obj X ⟶ Φ.obj Z) := by
@@ -122,22 +122,22 @@ theorem φ_comp {X Y Z : Type u} (f : X → Y) (g : Y → Z) :
   rw [h1, h2, h3, ← Φ.map_comp]
   rfl
 
--- Functor PUnit identity law for φ
+-- `Functor` `PUnit` identity law for `φ`
 @[simp]
 theorem φ_pu_id (pu : PUnit) : φ (C := C) (fun _ => pu) = 𝟙 (Φ.obj PUnit) := by
   have h_pu_id : (fun _ => pu) = id := rfl
   have h_id_eq : φ (C := C) id = Φ.map (𝟙 PUnit) := by exact φ_eq id
   exact Eq.trans (congr_arg φ h_pu_id) (Eq.trans h_id_eq (Φ.map_id PUnit))
 
--- Equation relating CoYoneda EndoFunctor's (CYEF Z).map and φ
--- (recall that φ is defined in terms of Φ.map)
+-- Equation relating CoYoneda `EndoFunctor`'s `(CYEF Z).map` and `φ`
+-- (recall that `φ` is defined in terms of `Φ.map`)
 @[simp]
 theorem CYEF_map_eq_φ {Z X Y : C} (f : X ⟶ Y) : (CYEF Z).map f = φ (. ≫ f) := by
   dsimp only [CYEF, CYEF_def, CYF, coyoneda, yoneda, Functor.comp_obj, Functor.comp_map]
   exact (φ_eq (. ≫ f)).symm
 
--- Equation relating  Global EndoFunctor's (GEF_def Φ).map and φ
--- (recall that φ is defined in terms of Φ.map)
+-- Equation relating  Global `EndoFunctor`'s `(GEF_def Φ).map` and `φ`
+-- (recall that `φ` is defined in terms of `Φ.map`)
 @[simp]
 theorem GF_map_eq_φ {X Y : C} (f : X ⟶ Y) : (GEF_def Φ).map f = φ (. ≫ f) :=
   CYEF_map_eq_φ f
@@ -173,8 +173,7 @@ def ggfx2τX
     }
     τX
 
--- 'τX' of type `CYEF X ⟶ (F ⋙ GEF)`
--- can be defined in terms of global value 'φ (fun _ => 𝟙 X) ≫ τX.app X'
+-- `τX` of type `CYEF X ⟶ (F ⋙ GEF)` equals `φ (fun _ => 𝟙 X) ≫ τX.app X`
 theorem left_inverse {F : C ⥤ C} {X : C} (τX : CYEF X ⟶ (F ⋙ GEF)) :
     τX = ggfx2τX (φ (fun _ => 𝟙 X) ≫ τX.app X) := by
   ext Y
@@ -242,7 +241,8 @@ theorem left_inverse {F : C ⥤ C} {X : C} (τX : CYEF X ⟶ (F ⋙ GEF)) :
         Eq.trans h_stepE (congr_arg (. ≫ γμ.app (F.obj Y)) h_inner_eq)
   exact h_final
 
--- relating γμ and φ (also involves (GEF_def Φ).obj)
+-- relating `γμ` and `φ` (also involves `(GEF_def Φ).obj`)
+-- (recall that `φ` is defined in terms of `Φ.map`)
 theorem φ_γμ {X : C} (ggfx : Global ((GEF_def Φ).obj X)) :
     φ (fun (_ : PUnit) => ggfx) ≫ γμ.app X = ggfx := by
   have h_nat : ggfx ≫ γη.app ((GEF_def Φ).obj X) =
@@ -269,6 +269,7 @@ theorem φ_γμ {X : C} (ggfx : Global ((GEF_def Φ).obj X)) :
   erw [h_g_eta] at h_final
   exact h_final
 
+-- `ggfx` of type `Global ((F ⋙ GEF).obj X)` equals `φ (fun _ => 𝟙 X) ≫ τX.app X`
 theorem right_inverse {F : C ⥤ C} {X : C} (ggfx : Global ((F ⋙ GEF).obj X)) :
     ggfx = (φ fun _ => 𝟙 X) ≫ (ggfx2τX ggfx).app X := by
   change
@@ -287,7 +288,7 @@ theorem right_inverse {F : C ⥤ C} {X : C} (ggfx : Global ((F ⋙ GEF).obj X)) 
   rw [h2]
   exact (φ_γμ ggfx).symm
 
--- equivalence
+-- main equivalence
 def coEndoYonedaEquiv {F : C ⥤ C} {X : C} : (CYEF X ⟶ (F ⋙ GEF)) ≃ Global ((F ⋙ GEF).obj X)
 where
   toFun     := τX2ggfx
