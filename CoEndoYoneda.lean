@@ -270,7 +270,7 @@ theorem φ_γμ {X : C} (ggfx : Global ((GEF_def Φ).obj X)) :
   exact h_final
 
 theorem right_inverse {F : C ⥤ C} {X : C} (ggfx : Global ((F ⋙ GEF).obj X)) :
-    ggfx = (fun τX => (φ fun _ => 𝟙 X) ≫ τX.app X) (ggfx2τX ggfx) := by
+    ggfx = (φ fun _ => 𝟙 X) ≫ (ggfx2τX ggfx).app X := by
   change
     ggfx = φ (fun _ => 𝟙 X) ≫
       (φ (Y := Global (GEF.obj (F.obj X))) (ggfx ≫ (F ⋙ GEF).map .) ≫
