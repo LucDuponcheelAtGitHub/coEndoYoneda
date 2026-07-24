@@ -160,7 +160,7 @@ class FunctionalCategory (C : Type (u + 1)) extends LargeCategory.{u} C where
   -- Global Multiplication
   γμ : (GEF_def Φ ⋙ GEF_def Φ) ⟶ GEF_def Φ
 
-  -- Global Unit associativity law is not (yet) needed
+  -- Global Multiplication associativity law is not (yet) needed
   -- γ_assoc :
   --   ∀ (X : C), (GEF_def Φ).map (γμ.app X) ≫ γμ.app X = γμ.app ((GEF_def Φ).obj X) ≫ γμ.app X
 
