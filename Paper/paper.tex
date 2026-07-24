@@ -71,14 +71,16 @@ Theory and Formalization in Lean 4}
 We present a variation of the CoYoneda Lemma for functional categories equipped with a monadic
 structure of its global elements, which we formally identify as \emph{Functional Categories}. The
 central theoretical contribution, the Pointfree CoEndoYoneda Equivalence, establishes an isomorphism
-between, on the one hand, natural transformations mapping out of co-Yoneda endofunctors to a designated kind
-of global endofunctors and, on the other hand, some corresponding kind of global elements. 
+between, on the one hand, natural transformations mapping out of co-Yoneda endofunctors to a
+designated kind of global endofunctors and, on the other hand, some corresponding kind of global
+elements. 
 
-The original motivation was to formulate an equivalence that could play a role in the broader programming 
-world, encompassing both pure programs, more precisely functions, and impure programs, more precisely computation
-with side-effects valued functions (modeled via Kleisli categories). While the requirements proved too
-restrictive to admit arbitrary monadic effects, this limitation reveals a profound  mathematical result:
-the \emph{Functional Category} constraints categorically classify the essence of referential transparency.
+The original motivation was to formulate an equivalence that could play a role in the broader
+programming  world, encompassing both pure programs, more precisely functions, and impure programs,
+more precisely computation with side-effects valued functions (modeled via Kleisli categories).
+While the requirements proved too restrictive to admit arbitrary monadic effects, this limitation
+reveals a profound  mathematical result: the \emph{Functional Category} constraints categorically
+classify the essence of referential transparency.
 
 In addition to outlining the mathematical foundations, we detail the complete formalization of this
 result in the Lean 4 theorem prover. We discuss the technical challenges of working with functor
@@ -89,23 +91,23 @@ type theory to construct fully formal, pointfree proofs of higher-level category
 
 \section{Introduction}
 
-The \emph{Co\!Yoneda Lemma} serves as a cornerstone of modern category theory, asserting that for any
-category  $\mathcal{C}$, object $X \in \mathcal{C}$, and functor $F : \mathcal{C} \to \mathbf{Set}$,
-natural transformations $\text{Nat}(\mathcal{C}(X, -), F)$ are isomorphic to functor evaluations 
-$F(X)$. This result fundamentally states that an object $X$ is completely determined by the
-morphisms out of it.
+The \emph{Co\!Yoneda Lemma} serves as a cornerstone of modern category theory, asserting that for
+any category  $\mathcal{C}$, object $X \in \mathcal{C}$, and functor
+$F : \mathcal{C} \to \mathbf{Set}$, natural transformations $\text{Nat}(\mathcal{C}(X, -), F)$ are
+isomorphic to functor evaluations  $F(X)$. This result fundamentally states that an object $X$ is
+completely determined by the morphisms out of it.
 
 In computational settings, we frequently encounter categories equipped with additional structure.
-Categories that have a functor mapping functions of types (or sets) to programs, their images being called pure
-programs. We define such a category as a \emph{Functional Category}. In this paper, we explore how a
-variation of the CoYoneda isomorphism extends in this setting. The variation replaces elements by
-global elements and is entirely pointfree.
+Categories that have a functor mapping functions of types (or sets) to programs, their images being
+called pure programs. We define such a category as a \emph{Functional Category}. In this paper, we
+explore how a variation of the CoYoneda isomorphism extends in this setting. The variation replaces
+elements by global elements and is entirely pointfree.
 
 A key motivation for this exploration is the world of computer programs, which consist of both 
-"pure programs without side-effects" and "impure programs with side-effects". We set out to formulate 
-a CoEndoYoneda equivalence for endofunctors that could model this broader programming world using monads.
-Remarkably, we discover that the structural requirements of our equivalence serve as a perfect sieve for purity, 
-mathematically forcing monadic referential transparency.
+"pure programs without side-effects" and "impure programs with side-effects". We set out to
+formulate a CoEndoYoneda equivalence for endofunctors that could model this broader programming
+world using monads. Remarkably, we discover that the structural requirements of our equivalence
+serve as a sieve for purity, mathematically forcing monadic referential transparency.
 
 We provide a comprehensive discussion of how these concepts and theorems are formalized in the
 Lean 4 proof assistant using the \texttt{Mathlib} library.
@@ -204,7 +206,8 @@ abbrev G
 \end{lstlisting}
 \vspace{6pt}
 
-A canonical, trivial instance of the type class is the world of "pure functions without side-effects", $\mathbf{Type}$ itself, where $\Phi$ is the identity functor.
+A canonical, trivial instance of the type class is the world of pure programs without side-effects
+(functions), $\mathbf{Type}$ itself, where $\Phi$ is the identity functor.
 
 \vspace{6pt}
 \begin{lstlisting}[basicstyle=\tiny]
@@ -224,7 +227,8 @@ instance typesFunctionalCategory : FunctionalCategory (Type u) where
 
 \section{The CoEndoYoneda Equivalence}
 
-The requirements of \texttt{FunctionalCategory} prove to be sufficient to establish a coendoyoneda equivalence for endofunctors.
+The requirements of \texttt{FunctionalCategory} prove to be sufficient to establish a CoEndoYoneda
+equivalence for endofunctors.
 
 \subsection{Auxiliary definitions and theorems}
 
@@ -271,7 +275,8 @@ theorem right_inverse {F : C ⥤ C} {X : C} (ggfx : Global ((F ⋙ GEF).obj X)) 
 \end{lstlisting}
 \vspace{6pt}
 
-Notice that both inverses apply $\varphi$ (defined as $\Phi.\text{map}$) to $\text{fun } \_ \Rightarrow \text{id}_X$, which mirrors the classic CoYoneda construction.
+Notice that both inverses apply $\varphi$ (defined as $\Phi.\text{map}$) to 
+$\text{fun } \_ \Rightarrow \text{id}_X$, which mirrors the classic CoYoneda construction.
 
 \subsection{CoEndoYoneda Equivalence}
 
@@ -294,28 +299,34 @@ and constructing natural transformations in functional categories.
 
 \section{The Essence of Purity \\ (Every Disadvantage Has an Advantage)}
 
-The original motivation was to define a CoEndoYoneda equivalence that could play a role in the broader programming world, 
-which consists of both pure programs (functions) and impure programs (computation with side-effects valued functions).
-The natural setting for such impure programs is the Kleisli category of a Monad $M$, denoted \texttt{KleisliCat M}.
+The original motivation was to define a CoEndoYoneda equivalence that could play a role in the
+broader programming world, which consists of both pure programs (functions) and impure programs
+(computation with side-effects valued functions). The natural setting for such impure programs is
+the Kleisli category of a Monad $M$, denoted \texttt{KleisliCat M}.
 
-However, attempting to instantiate \texttt{KleisliCat M} as a \texttt{FunctionalCategory} reveals an apparent limitation. 
-The equivalence cannot be instantiated for arbitrary monads. 
-Thus, the \texttt{coEndoYonedaEquiv} is not universally useful for the "impure programming" world.
+However, attempting to instantiate \texttt{KleisliCat M} as a \texttt{FunctionalCategory} reveals
+an apparent limitation.  The equivalence cannot be instantiated for arbitrary monads.  Thus, the
+\texttt{coEndoYonedaEquiv} is not universally useful for the (potentially impure) programming
+world.
 
 But this disadvantage reveals a profound mathematical advantage: \\
-the \texttt{FunctionalCategory} requirements act as a strict classification of purity. 
-More precisely, for \texttt{KleisliCat M}, they mathematically declare the essence of referential transparency
-of monad computations, cfr. referential transparency of expression evaluations.
+the \texttt{FunctionalCategory} requirements, more precisely $\gamma\eta$-naturality, act as a
+strict classification of purity for \texttt{KleisliCat M}. They mathematically declare the essence
+of referential transparency of monad computations
+(cfr. referential transparency of expression evaluations).
 
 \subsection{The Purity Constraint}
 
-The core constraint imposed by $\gamma\eta.\text{naturality}$ demands that mapping \texttt{pure} over the structure of a monadic value $m$ is exactly the same as wrapping the entire structure $m$ in \texttt{pure}. Formally, it forces the equality:
+The core constraint imposed by $\gamma\eta.\text{naturality}$ demands that mapping \texttt{pure}
+over the structure of a monadic value $m$ is exactly the same as wrapping the entire structure $m$
+in \texttt{pure}. Formally, it forces the equality:
 \[
 m \gg= \lambda z. \text{pure}(\text{pure}(z)) = \text{pure}(m)
 \]
 
-If a Monad satisfies this purity constraint (which is strictly required to instantiate \texttt{FunctionalCategory} 
-via \texttt{KleisliCat}), then its "shape" functor evaluated at \texttt{PUnit} is a subsingleton (proof not shown). 
+If a Monad satisfies this purity constraint (which is strictly required to instantiate
+\texttt{FunctionalCategory} via \texttt{KleisliCat}), then its shape functor evaluated at
+\texttt{PUnit} is a subsingleton (proof not shown). 
 
 \vspace{6pt}
 \begin{lstlisting}[basicstyle=\tiny]
@@ -342,14 +353,13 @@ theorem functional_category_implies_purity
 \end{lstlisting}
 \vspace{6pt}
 
-In a nutshell, we prove that \\
-
-{\em Referential transparency is exactly the condition required for a computational context to admit a global coyoneda endofunctor equivalence}.
+{\em Referential transparency is exactly the requirement for a computational context to admit a
+global coyoneda endofunctor equivalence}.
 
 \section{Proof Techniques and Challenges in Lean 4}
 
-Formalizing abstract category theory in dependent type theory (DTT) introduces unique difficulties,
-particularly concerning definitional equality. 
+Formalizing abstract category theory in dependent type theory (DTT) introduces unique
+difficulties, particularly concerning definitional equality. 
 
 \subsection{Strict Functor Composition}
 In standard mathematics, functor composition is strictly associative. In Lean 4, however, these are
@@ -364,8 +374,8 @@ To circumvent the strict type-checker without resorting to manual casts (such as
 the proof for \texttt{left\_inverse} abandons the monolithic \texttt{simp} approach in favor of
 explicit equality chains acting on the natural transformation components.
 
-By utilizing \texttt{Eq.trans} and \texttt{congr\_arg}, we explicitly guide the type checker through
-the unit laws and naturality squares:
+By utilizing \texttt{Eq.trans} and \texttt{congr\_arg}, we explicitly guide the type checker
+through the unit laws and naturality squares:
 
 \begin{lstlisting}[basicstyle=\tiny]
   have h1 : 
@@ -390,8 +400,15 @@ formalization.
 \section{Conclusion}
 
 The Pointfree CoEndoYoneda Lemma is a variation of the classical Pointful CoYoneda Lemma in a
-functional category setting. While our initial aim was to generalize this equivalence to arbitrary computational effects via monads, the rigorous formalization process revealed that the required categorical structure fundamentally filters out impurities.
+functional category setting. While our initial aim was to generalize this equivalence to arbitrary
+computational effects via monads, the rigorous formalization process revealed that the required
+categorical structure fundamentally filters out impurities.
 
-By successfully formalizing the lemma in Lean 4, we have not only verified its absolute logical correctness but also established that \texttt{FunctionalCategory} mathematically classifies referential transparency. Moreover, we have demonstrated a concrete methodology for handling strict composition equality in dependent type theory. The approach of combining explicit structural definitions with targeted, step-by-step equality chaining provides a reliable method for formalizing advanced category theory in modern proof assistants.
+By successfully formalizing the lemma in Lean 4, we have not only verified its absolute logical
+correctness but also established that \texttt{FunctionalCategory} mathematically classifies
+referential transparency. Moreover, we have demonstrated a concrete methodology for handling strict
+composition equality in dependent type theory. The approach of combining explicit structural
+definitions with targeted, step-by-step equality chaining provides a reliable method for
+formalizing advanced category theory in modern proof assistants.
 
 \end{document}
