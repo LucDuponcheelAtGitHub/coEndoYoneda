@@ -1,5 +1,132 @@
 import Mathlib.CategoryTheory.Yoneda
--- import Mathlib.CategoryTheory.Monad
+import Mathlib.CategoryTheory.Category.KleisliCat
+
+/-
+
+What is the motivation of all this?
+
+Given a presheaf `C ⥤ Type u` *and* a functor `Type u ⥤ C`
+they can be composed to an endofunctor `C ⥤ C`.
+
+The existence of such a functor `Type u ⥤ C` is the first
+requirement of `class FunctionalCategory` modeled as
+- `Φ : Type u ⥤ C`.
+
+`class FunctionalCategory` also requires the existence of
+`Monad`-like natural transformations for global-like values
+and a left unit law modeled as
+- `γμ : (GEF_def Φ ⋙ GEF_def Φ) ⟶ GEF_def Φ`
+- `γη : 𝟭 _ ⟶ GEF_def Φ`
+- `γ_left_unit : ∀ (X : C), γη.app ((GEF_def Φ).obj X) ≫ γμ.app X = 𝟙 ((GEF_def Φ).obj X)`
+where
+- `def GEF_def {C : Type (u + 1)} [LargeCategory.{u} C] (Φ : Type u ⥤ C) : C ⥤ C`
+is an endofunctor constructing `Φ` related global values.
+
+I could have defined a `GlobalMonad` but I did not do it
+because only `γ_left_unit` is required.
+
+For `C = Type u`, the world of "pure functions without side-effects"
+there is a trivial instance modeled as
+- `instance typesFunctionalCategory : FunctionalCategory (Type u) where`
+-   `Φ := 𝟭 (Type u)`
+(for trivial definitions of the other declarations : see code).
+
+But what about the world of "programs" that consist both of
+"pure functions without side-effects" and
+"impure functions with side-effects"?
+
+My idea was to formulate a coendoyoneda equivalence for endofunctors
+that could play a role in the programming world, and it turned out
+that the `FunctionalCategory` requirements were sufficient to prove
+that coendoyoneda equivalence for endofunctors.
+
+The formulation is modeled as
+- `def coEndoYonedaEquiv {F : C ⥤ C} {X : C} : (CYEF X ⟶ (F ⋙ GEF)) ≃ Global ((F ⋙ GEF).obj X)`
+where
+- `def Global : C → Type u := G Φ`
+- `def G {C : Type (u + 1)} [LargeCategory.{u} C] (Φ : Type u ⥤ C) (X : C) : Type u`
+model `Φ` related global values
+
+The proof of the equivalence uses
+- `def τx2ggfx {F : C ⥤ C} {X : C} (τx : CYEF X ⟶ F ⋙ GEF) : Global ((F ⋙ GEF).obj X)`
+modeling a function that
+given a natural transformation argument of type `CYEF X ⟶ (F ⋙ GEF)`.
+Yields a "global global value" result of type `Global (GEF.obj (F.obj X))`
+
+and
+
+- `def ggfx2τx {F : C ⥤ C} {X : C} (ggfx : Global (GEF.obj (F.obj X))) : CYEF X ⟶ (F ⋙ GEF)`
+modeling a function that
+given a "global global value" argument of type `Global (GEF.obj (F.obj X))`
+yields a natural transformation result of type `CYEF X ⟶ (F ⋙ GEF)`.
+
+The proof of the equivalence also uses
+- `theorem left_inverse {F : C ⥤ C} {X : C} (τx : CYEF X ⟶ (F ⋙ GEF)) :`
+    `τx = ggfx2τx (φ (fun _ => 𝟙 X) ≫ τx.app X)`
+
+and
+
+- `theorem right_inverse {F : C ⥤ C} {X : C} (ggfx : Global ((F ⋙ GEF).obj X)) :`
+    `ggfx = (φ (fun _ => 𝟙 X)) ≫ (ggfx2τx ggfx).app X`
+
+Both apply `φ` defined as `Φ.map` to `fun _ => 𝟙 X`, which, for those
+who know about the classic `coyoneda` equivalence, shouls not come as a surprise.
+
+We also prove a less substantial (and less elegant) lemma that does not use `γμ`.
+
+The formulation is modeled as
+- `theorem coEndoYonedaLemma {F : C ⥤ C} {X : C} (τx : CYEF X ⟶ F) :`
+    `τx2γτx τx =`
+      `gfx2τx (φ (fun _ => 𝟙 X) ≫ τx.app X)`
+
+It also applies  `φ` defined as `Φ.map` to `fun _ => 𝟙 X`,
+(for more details : see code).
+
+We could have proved a corresponding equivslence as well.
+
+But ... there is bad news and good news!
+
+First the bad news.
+
+Trying define `KleisliCat M` for a monad `M` as a `FunctionalCategory` instance,
+turned out not to be possible.
+
+So my `coEndoYonedaEquiv` is not useful for the programming world,
+only for the "pure programming" world, as far as `KleisliCat M` is concerned,
+where "pureness" then boils down to "monadic computation referential transparancy",
+cfr. "expression evaluation referential transparancy".
+
+Next the good news (every disadvantage has an advantage).
+
+`class FunctionalCategory` actually *classifies* the property
+of being "pure", without "side-effects" in `KleisliCat M`
+in a categorical way, because it forces equality
+`mz >>= fun z => pure (pure z) = pure mz`.
+
+The core constraint imposed by `γη.naturality` on morphisms
+demands that mapping `pure` over the structure of `m` is exactly the same
+as wrapping the entire structure `m` in `pure`.
+
+If a `Monad` satisfies the purity constraint
+(which is required to instantiate `FunctionalCategory` class via `KleisliCat`),
+then its "shape" functor evaluated at `PUnit` is a `subsingleton`.
+
+This means `M` is a "Subsingleton Monad" (e.g. `Identity`, `Truncation`, or `Terminal`).
+
+Formalizing the requirement: If `KleisliCat M` admits a `FunctionalCategory`
+structure under the canonical embedding where `γη` acts by double-wrapping
+elements, then the monad `M` mathematically forces the `EnforcesPurity` constraint.
+
+in a nutshell, as a side-effect (no pun intended (!)) I proved,
+in the `KleisliCat M` world the following theorem
+
+*Referential transparancy is exactly the condition required for
+a computational context to admit a global coyoneda endofunctor
+equivalence*
+
+(for more details : see code).
+
+-/
 
 set_option mathlib.tactic.category.grind true
 
@@ -82,28 +209,6 @@ def CYEF {C : Type (u + 1)} [FunctionalCategory C] (X : C) : C ⥤ C :=
 -- `grind` complains if this is a `def`
 abbrev GEF {C : Type (u + 1)} [FunctionalCategory C] : C ⥤ C :=
   GEF_def Φ
-
--- trivial FunctionalCategory instance
-instance typesFunctionalCategory : FunctionalCategory (Type u) where
-  Φ := 𝟭 (Type u)
-
-  γη := {
-    app := fun X => (𝟭 (Type u)).map (↾(fun x => ↾(fun _ => x)))
-    naturality := fun X Y f => by
-      ext
-      rfl
-  }
-
-  γμ := {
-    app :=
-      fun X => (𝟭 (Type u)).map (↾(fun (f : PUnit ⟶ PUnit ⟶ X) => ↾(fun pu => f pu pu)))
-    naturality := fun X Y f => by
-      ext
-      rfl
-  }
-
-  γ_left_unit := fun _ => by
-    rfl
 
 section CoEndoYonedaLemmas
 
@@ -273,7 +378,7 @@ theorem φ_γμ {X : C} (ggfx : Global (GEF.obj X)) :
 
 -- `ggfx` of type `Global ((F ⋙ GEF).obj X)` equals `φ (fun _ => 𝟙 X) ≫ τx.app X`
 theorem right_inverse {F : C ⥤ C} {X : C} (ggfx : Global ((F ⋙ GEF).obj X)) :
-    ggfx = (φ fun _ => 𝟙 X) ≫ (ggfx2τx ggfx).app X := by
+    ggfx = (φ (fun _ => 𝟙 X)) ≫ (ggfx2τx ggfx).app X := by
   change
     ggfx = φ (fun _ => 𝟙 X) ≫
       (φ (Y := Global (GEF.obj (F.obj X))) (ggfx ≫ (F ⋙ GEF).map .) ≫
@@ -298,16 +403,36 @@ where
   left_inv  := fun τx => (left_inverse  τx).symm
   right_inv := fun τx => (right_inverse τx).symm
 
-/-
+
+end CoEndoYonedaLemmas
+
+section LessSubstantialLemma
+
+open FunctionalCategory
+
+variable {C : Type (u + 1)} [FunctionalCategory C]
 
 --
 -- a less substantial lemma that does not use γμ
 --
 
+@[simps]
+def τx2γτx {F : C ⥤ C} {X : C} (τ : CYEF X ⟶ F) :
+  CYEF X ⟶ (F ⋙ GEF)
+where
+  app Y := τ.app Y ≫ γη.app (F.obj Y)
+  naturality _ _ h := by
+    dsimp
+    have h_nat := γη.naturality (F.map h)
+    dsimp at h_nat
+    erw [τ.naturality_assoc, h_nat]
+    rw [Category.assoc]
+    rfl
+
 -- given a global value of type ` Global (F.obj X)`
 -- yields a natural transformation of type `CYEF X ⟶ (F ⋙ GEF)`
 @[simps]
-def globalValueToGlobalTransformation {F : C ⥤ C} {X : C} (gfx : Global (F.obj X)) :
+def gfx2τx {F : C ⥤ C} {X : C} (gfx : Global (F.obj X)) :
     CYEF X ⟶ (F ⋙ GEF) where
   app Y := φ (gfx ≫ F.map .)
   naturality _ _ h := by
@@ -326,10 +451,10 @@ def globalValueToGlobalTransformation {F : C ⥤ C} {X : C} (gfx : Global (F.obj
 -- 'transformationToGlobalTransformation 'τx' with `τx` of type `CYEF X ⟶ F`
 -- can be defined in terms of global value 'φ (fun _ => 𝟙 X) ≫ τx.app X'
 theorem coEndoYonedaLemma {F : C ⥤ C} {X : C} (τx : CYEF X ⟶ F) :
-  transformationToGlobalTransformation τx =
-    globalValueToGlobalTransformation (φ (fun _ => 𝟙 X) ≫ τx.app X) := by
+  τx2γτx τx =
+    gfx2τx (φ (fun _ => 𝟙 X) ≫ τx.app X) := by
   ext Y
-  dsimp [transformationToGlobalTransformation, globalValueToGlobalTransformation]
+  dsimp [τx2γτx, gfx2τx]
   erw [γη.naturality (τx.app Y)]
   erw [γη_φ (X ⟶ Y)]
   erw [GF_map_eq_φ (τx.app Y)]
@@ -365,8 +490,113 @@ theorem coEndoYonedaLemma {F : C ⥤ C} {X : C} (τx : CYEF X ⟶ F) :
       congr_arg (. ≫ τx.app Y) step4Helper
   exact (Eq.trans step1 (Eq.trans step2 (Eq.trans step3 step4))).symm
 
--/
+end LessSubstantialLemma
 
-end CoEndoYonedaLemmas
+section Functions
+
+-- trivial FunctionalCategory instance
+instance typesFunctionalCategory : FunctionalCategory (Type u) where
+  Φ := 𝟭 (Type u)
+
+  γη := {
+    app := fun X => (𝟭 (Type u)).map (↾(fun x => ↾(fun _ => x)))
+    naturality := fun X Y f => by
+      ext
+      rfl
+  }
+
+  γμ := {
+    app :=
+      fun X => (𝟭 (Type u)).map (↾(fun (f : PUnit ⟶ PUnit ⟶ X) => ↾(fun pu => f pu pu)))
+    naturality := fun X Y f => by
+      ext
+      rfl
+  }
+
+  γ_left_unit := fun _ => by
+    rfl
+
+
+end Functions
+
+section PurityTheorem
+
+universe v
+variable (M : Type v → Type v) [Monad M] [LawfulMonad M]
+
+def EnforcesPurity : Prop :=
+  ∀ {X : Type v} (mx : M X), (mx >>= fun x => pure (pure x)) = pure mx
+
+
+theorem purity_implies_shape_eq_pure
+  (h_pure : EnforcesPurity M) (m : M PUnit) :
+    m = pure PUnit.unit := by
+  have h1 := h_pure m
+  have h2 := congrArg (fun (x : M (M PUnit)) => x >>= fun _ => pure PUnit.unit) h1
+  simp at h2
+  exact h2
+
+theorem purity_implies_subsingleton_shape
+  (h_pure : EnforcesPurity M) : Subsingleton (M PUnit) := by
+  constructor
+  intro m1 m2
+  rw [purity_implies_shape_eq_pure M h_pure m1, purity_implies_shape_eq_pure M h_pure m2]
+
+-- The canonical embedding of Type into KleisliCat M
+def κΦ : Type v ⥤ KleisliCat M where
+  obj X := X
+  map f := fun x => pure (f x)
+  map_id X := by
+    ext x
+    dsimp [CategoryStruct.id, KleisliCat.id_def]
+    rfl
+  map_comp f g := by
+    ext x
+    dsimp [CategoryStruct.comp, KleisliCat.comp_def, Bind.kleisliRight]
+    rw [pure_bind]
+    rfl
+
+@[simp]
+lemma GEF_map_eq (X Y : KleisliCat M) (f : X ⟶ Y) (h : PUnit → M X) :
+  (GEF_def (κΦ M)).map f h = pure (fun p => h p >>= f) := rfl
+
+theorem functional_category_implies_purity
+  (γη : 𝟭 (KleisliCat M) ⟶ (GEF_def (κΦ M)))
+  (h_γη_app : ∀ X, γη.app X = fun x => pure (fun _ => pure x)) :
+  EnforcesPurity M := by
+  intro Z mz
+  have h_nat := γη.naturality (X := PUnit) (Y := Z) (fun _ => mz)
+  have h1 : (fun _ => mz) ≫ γη.app Z = γη.app PUnit ≫ (GEF_def (κΦ M)).map (fun _ => mz) := h_nat
+  -- LHS Evaluation
+  have h_lhs : ((fun _ => mz) ≫ γη.app Z) PUnit.unit =
+    (mz >>= fun z => pure (fun _ : PUnit => pure z)) := by
+    dsimp [CategoryStruct.comp, KleisliCat.comp_def, Bind.kleisliRight]
+    rw [h_γη_app Z]
+    rfl
+  -- RHS Evaluation
+  have h_rhs : (γη.app PUnit ≫ (GEF_def (κΦ M)).map (fun (_ : PUnit.{v+1}) => mz)) PUnit.unit =
+    pure (fun (_ : PUnit.{v+1}) => mz) := by
+    change (γη.app PUnit PUnit.unit) >>= (GEF_def (κΦ M)).map (fun (_ : PUnit.{v+1}) => mz) = _
+    rw [h_γη_app]
+    have h_map :
+      (GEF_def (κΦ M)).map (fun (_ : PUnit.{v+1}) => mz) =
+        fun (pu2mz : PUnit → M PUnit) => pure (fun (pu : PUnit.{v+1}) => pu2mz pu >>= fun (pu : PUnit.{v+1}) => mz) := rfl
+    rw [h_map]
+    change
+      (pure (fun _ => pure PUnit.unit)) >>= (fun pu2mu => pure (fun pu => pu2mu pu >>= fun (pu : PUnit.{v+1}) => mz)) = _
+    rw [pure_bind]
+    change pure (fun (pu : PUnit.{v+1}) => pure PUnit.unit >>= fun (pu : PUnit.{v+1}) => mz) = _
+    simp [pure_bind]
+  have h2 : (mz >>= fun z => pure (fun _ => pure z)) = pure (fun _ : PUnit.{v+1} => mz) := by
+    rw [← h_lhs, ← h_rhs]
+    exact congrFun h1 PUnit.unit
+  have h3 := congrArg (fun (m_pu2mz : M (PUnit → M Z)) => m_pu2mz >>= fun pu2mz => pure (pu2mz PUnit.unit)) h2
+  -- LHS reduces to `mz >>= fun z => pure (pure z)`
+  -- RHS reduces to `pure mz`
+  simp at h3
+  rw [← bind_pure_comp] at h3
+  exact h3
+
+end PurityTheorem
 
 end CoEndoYoneda
