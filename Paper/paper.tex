@@ -263,7 +263,7 @@ We formulate (and prove, not shown) a left inverse theorem as follows
 \vspace{6pt}
 \begin{lstlisting}[basicstyle=\tiny]
 theorem left_inverse {F : C ⥤ C} {X : C} (τX : CYEF X ⟶ (F ⋙ GEF)) :
-    τX = ggfx2τX (φ (fun _ => 𝟙 X) ≫ τX.app X) := by ...
+    τx = ggfx2τx (τx2ggfx τx) := by ...
 \end{lstlisting}
 
 We formulate (and prove, not shown) a right inverse theorem as follows
@@ -271,7 +271,7 @@ We formulate (and prove, not shown) a right inverse theorem as follows
 \vspace{6pt}
 \begin{lstlisting}[basicstyle=\tiny]
 theorem right_inverse {F : C ⥤ C} {X : C} (ggfx : Global ((F ⋙ GEF).obj X)) :
-    ggfx = (fun τX => (φ fun _ => 𝟙 X) ≫ τX.app X) (ggfx2τX ggfx) := by
+    ggfx = τx2ggfx (ggfx2τx ggfx) := by ...
 \end{lstlisting}
 \vspace{6pt}
 
