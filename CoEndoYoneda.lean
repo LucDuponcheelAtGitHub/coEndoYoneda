@@ -141,11 +141,11 @@ universe u
 def CYF {C : Type (u + 1)} [LargeCategory.{u} C] (X : C) : C ⥤ Type u :=
   coyoneda.obj (op X)
 
--- CoYoneda `EndoFunctor` for `X` and `Φ`
+-- CoYoneda `EndoFunctor` for `Φ` and `X`
 def CYEF_def {C : Type (u + 1)} [LargeCategory.{u} C] (Φ : Type u ⥤ C) (X : C) : C ⥤ C :=
   CYF X ⋙ Φ
 
--- Global `EndoFunctor` definition for `Φ`
+-- Global `EndoFunctor` definition for `Φ` (`X` being `PUnit`)
 def GEF_def {C : Type (u + 1)} [LargeCategory.{u} C] (Φ : Type u ⥤ C) : C ⥤ C :=
   CYEF_def Φ (Φ.obj PUnit)
 
@@ -175,10 +175,11 @@ class FunctionalCategory (C : Type (u + 1)) extends LargeCategory.{u} C where
   --   ∀ (X : C), (GEF_def Φ).map (γη.app X) ≫ γμ.app X = 𝟙 ((GEF_def Φ).obj X)
 
   -- Functional `Functor` `map`
-  -- Note that we are into the `ConcreteCategory` realm now
+  -- Note that we are into the `ConcreteCategory` realm now via `TypeCat.ofHom`
   φ {X Y : Type u} (f : X → Y) : Φ.obj X ⟶ Φ.obj Y := Φ.map (TypeCat.ofHom f)
 
   -- Functional `Functor` `map` equality
+  -- Note that we are into the `ConcreteCategory` realm now via `TypeCat.ofHom`
   φ_eq : ∀ {X Y : Type u} (f : X → Y), φ f = Φ.map (TypeCat.ofHom f) := by
     intros
     rfl
@@ -219,6 +220,7 @@ variable {C : Type (u + 1)} [FunctionalCategory C]
 def Global : C → Type u := G Φ
 
 -- `Functor` composition law for `φ`
+-- Note that we are into the `ConcreteCategory` realm now via `TypeCat.ofHom`
 @[simp]
 theorem φ_comp {X Y Z : Type u} (f : X → Y) (g : Y → Z) :
     φ f ≫ φ g = (φ (C := C) (fun x => g (f x)) : Φ.obj X ⟶ Φ.obj Z) := by
@@ -246,15 +248,15 @@ theorem CYEF_map_eq_φ {Z X Y : C} (f : X ⟶ Y) : (CYEF Z).map f = φ (. ≫ f)
 theorem GF_map_eq_φ {X Y : C} (f : X ⟶ Y) : GEF.map f = φ (. ≫ f) :=
   CYEF_map_eq_φ f
 
--- given a natural transformation of type `CYEF X ⟶ (F ⋙ GEF)`
--- yields a global global value of type `Global ((F ⋙ GEF).obj X)`
+-- given a natural transformation argument of type `CYEF X ⟶ (F ⋙ GEF)`
+-- yields a global global result of type `Global ((F ⋙ GEF).obj X)`
 def τx2ggfx {F : C ⥤ C} {X : C} (τx : CYEF X ⟶ F ⋙ GEF) :
   Global ((F ⋙ GEF).obj X) :=
     let ggfx := φ (fun _ => 𝟙 X) ≫ τx.app X
     ggfx
 
--- given a global global value of type `Global (GEF.obj (F.obj X))`
--- yields a natural transformation of type `CYEF X ⟶ (F ⋙ GEF)`
+-- given a global global argument of type `Global (GEF.obj (F.obj X))`
+-- yields a natural transformation result of type `CYEF X ⟶ (F ⋙ GEF)`
 --
 -- TODO : type system complains when using `Global ((F ⋙ GEF).obj X)` (?)
 --
@@ -412,9 +414,7 @@ open FunctionalCategory
 
 variable {C : Type (u + 1)} [FunctionalCategory C]
 
---
 -- a less substantial lemma that does not use γμ
---
 
 @[simps]
 def τx2γτx {F : C ⥤ C} {X : C} (τ : CYEF X ⟶ F) :
@@ -429,8 +429,8 @@ where
     rw [Category.assoc]
     rfl
 
--- given a global value of type ` Global (F.obj X)`
--- yields a natural transformation of type `CYEF X ⟶ (F ⋙ GEF)`
+-- given a global argument of type ` Global (F.obj X)`
+-- yields a natural transformation result of type `CYEF X ⟶ (F ⋙ GEF)`
 @[simps]
 def gfx2τx {F : C ⥤ C} {X : C} (gfx : Global (F.obj X)) :
     CYEF X ⟶ (F ⋙ GEF) where
@@ -448,8 +448,8 @@ def gfx2τx {F : C ⥤ C} {X : C} (gfx : Global (F.obj X)) :
         (gfx ≫ F.map f) ≫ F.map h
     rw [F.map_comp, Category.assoc]
 
--- 'transformationToGlobalTransformation 'τx' with `τx` of type `CYEF X ⟶ F`
--- can be defined in terms of global value 'φ (fun _ => 𝟙 X) ≫ τx.app X'
+-- `τx2γτx τx` with `τx` of type `CYEF X ⟶ F`
+-- can be defined in terms of `φ (fun _ => 𝟙 X) ≫ τx.app X`
 theorem coEndoYonedaLemma {F : C ⥤ C} {X : C} (τx : CYEF X ⟶ F) :
   τx2γτx τx =
     gfx2τx (φ (fun _ => 𝟙 X) ≫ τx.app X) := by
@@ -494,7 +494,7 @@ end LessSubstantialLemma
 
 section Functions
 
--- trivial FunctionalCategory instance
+-- trivial `FunctionalCategory` instance
 instance typesFunctionalCategory : FunctionalCategory (Type u) where
   Φ := 𝟭 (Type u)
 
@@ -527,12 +527,10 @@ variable (M : Type v → Type v) [Monad M] [LawfulMonad M]
 def EnforcesPurity : Prop :=
   ∀ {X : Type v} (mx : M X), (mx >>= fun x => pure (pure x)) = pure mx
 
-
 theorem purity_implies_shape_eq_pure
-  (h_pure : EnforcesPurity M) (m : M PUnit) :
-    m = pure PUnit.unit := by
-  have h1 := h_pure m
-  have h2 := congrArg (fun (x : M (M PUnit)) => x >>= fun _ => pure PUnit.unit) h1
+  (h_pure : EnforcesPurity M) (mpu : M PUnit) : mpu = pure PUnit.unit := by
+  have h1 := h_pure mpu
+  have h2 := congrArg (fun (mmpu : M (M PUnit)) => mmpu >>= fun mpu => pure PUnit.unit) h1
   simp at h2
   exact h2
 
@@ -542,7 +540,7 @@ theorem purity_implies_subsingleton_shape
   intro m1 m2
   rw [purity_implies_shape_eq_pure M h_pure m1, purity_implies_shape_eq_pure M h_pure m2]
 
--- The canonical embedding of Type into KleisliCat M
+-- The canonical embedding of `Type v` into `KleisliCat M`
 def κΦ : Type v ⥤ KleisliCat M where
   obj X := X
   map f := fun x => pure (f x)
@@ -556,41 +554,40 @@ def κΦ : Type v ⥤ KleisliCat M where
     rw [pure_bind]
     rfl
 
-@[simp]
-lemma GEF_map_eq (X Y : KleisliCat M) (f : X ⟶ Y) (h : PUnit → M X) :
-  (GEF_def (κΦ M)).map f h = pure (fun p => h p >>= f) := rfl
-
+-- @[simp]
+-- lemma GEF_map_eq (X Y : KleisliCat M) (f : X ⟶ Y) (h : PUnit → M X) :
+--   (GEF_def (κΦ M)).map f h = pure (fun p => h p >>= f) := rfl
 theorem functional_category_implies_purity
   (γη : 𝟭 (KleisliCat M) ⟶ (GEF_def (κΦ M)))
-  (h_γη_app : ∀ X, γη.app X = fun x => pure (fun _ => pure x)) :
+  (h_γη_app : ∀ Z, γη.app Z = fun z2mz => pure (fun _ => pure z2mz)) :
   EnforcesPurity M := by
   intro Z mz
   have h_nat := γη.naturality (X := PUnit) (Y := Z) (fun _ => mz)
   have h1 : (fun _ => mz) ≫ γη.app Z = γη.app PUnit ≫ (GEF_def (κΦ M)).map (fun _ => mz) := h_nat
   -- LHS Evaluation
   have h_lhs : ((fun _ => mz) ≫ γη.app Z) PUnit.unit =
-    (mz >>= fun z => pure (fun _ : PUnit => pure z)) := by
+    (mz >>= fun z => pure (fun _ : PUnit => pure z)) := by -- needed
     dsimp [CategoryStruct.comp, KleisliCat.comp_def, Bind.kleisliRight]
     rw [h_γη_app Z]
     rfl
   -- RHS Evaluation
-  have h_rhs : (γη.app PUnit ≫ (GEF_def (κΦ M)).map (fun (_ : PUnit.{v+1}) => mz)) PUnit.unit =
-    pure (fun (_ : PUnit.{v+1}) => mz) := by
-    change (γη.app PUnit PUnit.unit) >>= (GEF_def (κΦ M)).map (fun (_ : PUnit.{v+1}) => mz) = _
+  have h_rhs : (γη.app PUnit ≫ (GEF_def (κΦ M)).map (fun _ => mz)) PUnit.unit =
+    pure (fun (_ : PUnit) => mz) := by -- needed
+    change (γη.app PUnit PUnit.unit) >>= (GEF_def (κΦ M)).map (fun _ => mz) = _
     rw [h_γη_app]
     have h_map :
       (GEF_def (κΦ M)).map (fun (_ : PUnit.{v+1}) => mz) =
-        fun (pu2mz : PUnit → M PUnit) => pure (fun (pu : PUnit.{v+1}) => pu2mz pu >>= fun (pu : PUnit.{v+1}) => mz) := rfl
+        fun pu2mz => pure (fun pu => pu2mz pu >>= fun pu => mz) := rfl
     rw [h_map]
     change
-      (pure (fun _ => pure PUnit.unit)) >>= (fun pu2mu => pure (fun pu => pu2mu pu >>= fun (pu : PUnit.{v+1}) => mz)) = _
+      (pure (fun _ => pure PUnit.unit)) >>= (fun pu2mu => pure (fun pu => pu2mu pu >>= fun pu => mz)) = _
     rw [pure_bind]
-    change pure (fun (pu : PUnit.{v+1}) => pure PUnit.unit >>= fun (pu : PUnit.{v+1}) => mz) = _
+    change pure (fun (pu : PUnit) => pure PUnit.unit >>= fun pu => mz) = _ -- needed
     simp [pure_bind]
-  have h2 : (mz >>= fun z => pure (fun _ => pure z)) = pure (fun _ : PUnit.{v+1} => mz) := by
+  have h2 : (mz >>= fun z => pure (fun _ => pure z)) = pure (fun (_ : PUnit.{v+1}) => mz) := by
     rw [← h_lhs, ← h_rhs]
     exact congrFun h1 PUnit.unit
-  have h3 := congrArg (fun (m_pu2mz : M (PUnit → M Z)) => m_pu2mz >>= fun pu2mz => pure (pu2mz PUnit.unit)) h2
+  have h3 := congrArg (fun m_pu2mz => m_pu2mz >>= fun pu2mz => pure (pu2mz PUnit.unit)) h2
   -- LHS reduces to `mz >>= fun z => pure (pure z)`
   -- RHS reduces to `pure mz`
   simp at h3
