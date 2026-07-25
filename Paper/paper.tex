@@ -330,18 +330,22 @@ If a Monad satisfies this purity constraint (which is strictly required to insta
 
 \vspace{6pt}
 \begin{lstlisting}[basicstyle=\tiny]
-def EnforcesPurity : Prop :=
+def Purity : Prop :=
   ∀ {X : Type v} (mx : M X), (mx >>= fun x => pure (pure x)) = pure mx
 
 theorem purity_implies_subsingleton_shape
-  (h_pure : EnforcesPurity M) : Subsingleton (M PUnit) := by ...
+  (h_pure : Purity M) : Subsingleton (M PUnit) := by ...
 \end{lstlisting}
 \vspace{6pt}
 
 This implies that $M$ is a "Subsingleton Monad" 
 (such as the Identity Monad or the Terminal Monad). 
-In other words, any standard computational effect 
-(like State, IO, or Option) is filtered out by the type system. 
+In other words, any standard computational effect is aggressively filtered out by the type system. 
+We have formally verified this rejection for six standard computational monads: 
+\texttt{Option}, \texttt{List}, \texttt{Reader}, \texttt{Writer}, \texttt{State}, and \texttt{Continuation}. 
+Satisfying the Purity constraint for these monads either leads to a direct logical contradiction 
+(as with \texttt{Option} and \texttt{List}) or mathematically forces their underlying parameters to be trivial 
+(e.g. forcing the state type or the reader environment to be a \texttt{Subsingleton}).
 
 We formalize this conclusion explicitly (proof not shown):
 \vspace{6pt}
@@ -349,7 +353,7 @@ We formalize this conclusion explicitly (proof not shown):
 theorem functional_category_implies_purity
   (γη : 𝟭 (KleisliCat M) ⟶ (GEF_def (κΦ M)))
   (h_γη_app : ∀ X, γη.app X = fun x => pure (fun _ => pure x)) :
-  EnforcesPurity M := by ...
+  Purity M := by ...
 \end{lstlisting}
 \vspace{6pt}
 

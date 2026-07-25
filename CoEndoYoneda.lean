@@ -106,12 +106,16 @@ in a categorical way, because it forces equality
 
 The constraint imposed by `γη.naturality` on morphisms demands that
 binding `pure` twice to `mz` is exactly the same as applying `pure` to `mz`.
- purity constraint
-(which is required to instan
-If a `Monad` satisfies thetiate `FunctionalCategory` class via `KleisliCat`),
+
+If a `Monad` satisfies this purity constraint
+(which is required to instantiate `FunctionalCategory` class via `KleisliCat`),
 then its shape functor evaluated at `PUnit` is a `Subsingleton`.
 
 This means `M` is a trivial `Monad` (e.g. `Identity`, `Truncation`, or `Terminal`).
+
+We have formally verified this rejection for six standard computational monads in `PurityExamples.lean`:
+`Option`, `List`, `Reader R`, `Writer W`, `State S`, and `Cont R`.
+Satisfying the Purity constraint for these monads either leads to a direct logical contradiction (as with `Option` and `List`) or mathematically forces their underlying parameters to be trivial (e.g. forcing the state type or the reader environment to be a `Subsingleton`).
 
 Formalizing the requirement:
 if `KleisliCat M` admits a `FunctionalCategory` structure under the canonical embedding
@@ -416,8 +420,6 @@ open FunctionalCategory
 
 variable {C : Type (u + 1)} [FunctionalCategory C]
 
--- a less substantial lemma that does not use γμ
-
 @[simps]
 def τx2γτx {F : C ⥤ C} {X : C} (τ : CYEF X ⟶ F) :
   CYEF X ⟶ (F ⋙ GEF)
@@ -431,7 +433,7 @@ where
     rw [Category.assoc]
     rfl
 
--- given a global argument of type ` Global (F.obj X)`
+-- given a global argument of type `Global (F.obj X)`
 -- yields a natural transformation result of type `CYEF X ⟶ (F ⋙ GEF)`
 @[simps]
 def gfx2τx {F : C ⥤ C} {X : C} (gfx : Global (F.obj X)) :
