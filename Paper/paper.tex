@@ -71,31 +71,29 @@ Theory and Formalization in Lean 4}
 \begin{abstract}
 We present a variation of the CoYoneda Lemma for functional categories equipped with a monadic
 structure of its global elements, which we formally identify as \emph{Functional Categories}. 
-
-The central theoretical contribution, the Pointfree CoEndoYoneda Equivalence, establishes an
-isomorphism between, on the one hand, natural transformations mapping out of co-Yoneda endofunctors
-to a designated kind of global endofunctors and, on the other hand, some corresponding kind of
-global elements. 
-
-Our original motivation was highly pragmatic: to formulate a CoEndoYoneda equivalence that could
-natively support both pure programs (functions) and impure programs (functions with side-effects, 
-modeled via Kleisli categories). While this aspiration ultimately met a mathematical wall, the
-failure was profoundly revealing. 
-
+\vspace{6 pt}
+The central theoretical contribution, what we refer to as the
+\emph{Pointfree CoEndoYoneda Equivalence}, establishes an isomorphism between, on the one hand,
+natural transformations mapping out of Co\!Yoneda endofunctors to a designated kind of global
+endofunctors and, on the other hand, some corresponding kind of global elements. 
+\vspace{6 pt}
+Our original motivation was pragmatic: formulate a CoEndoYoneda equivalence that could natively
+support both pure programs (functions) and impure programs (functions with side-effects, modeled
+via Kleisli categories). While this aspiration ultimately met a mathematical wall, the failure was
+profoundly revealing. 
+\vspace{6 pt}
 The structural requirements of the \emph{Functional Category} equivalence categorically reject
 arbitrary monadic effects. This limitation unexpectedly revealed a spectacular classification
-theorem: the naturality constraint of our framework mathematically forces the monad to be pure
-(idempotent). 
-
-We present a grand finale establishing a perfect 3-way mathematical equivalence between abstract
-category theory (in casu idempotent monads) and computational semantics.
-
+theorem: a naturality constraint of our framework mathematically forces the monad to be pure. 
+\vspace{6 pt}
+We present a grand finale establishing a perfect 3-way mathematical equivalence between pointfree
+category theory and computational semantics (in casu idempotent monads).
+\vspace{6 pt}
 In addition to outlining the mathematical foundations, we detail the complete formalization of this
 result in the Lean 4 theorem prover. We discuss the technical challenges of working with functor
 compositions under strict definitional equality and demonstrate strategies for navigating dependent
 type theory to construct fully formal, pointfree proofs of higher-level category theory results.
 \end{abstract}
-
 
 \section{Introduction}
 
@@ -118,7 +116,7 @@ also specialize this setting to Kleisli functions (monad-valued functions), as s
 (cfr. \emph{referential evaluation transparency of expressions}).
 
 Remarkably, we discover that the structural requirements of our Co\!Yoneda equivalence serve as an
-airtight sieve for program purity, for programs that ase Kleisli functions. In other words the
+airtight sieve for program purity, for programs that are Kleisli functions. In other words the
 structural requirements of our Co\!Yoneda equivalence serve as an airtight sieve for computation
 purity (referential computation transparency).
 
@@ -158,8 +156,8 @@ observation on its own.
 
 \vspace{12 pt}
 
-This structure essentially allows $\mathcal{C}$ to reflect the category of types into itself, while
-treating $GF$ as a monadic context. We define the \emph{Co\!Yoneda EndoFunctor}
+The structure above essentially allows $\mathcal{C}$ to reflect the category of types into itself,
+while treating $GF$ as a monadic context. We define the \emph{Co\!Yoneda EndoFunctor}
 $CY\!EF_X : \mathcal{C} \to \mathcal{C}$ for a fixed object $X$ as the composition:
 
 \[
@@ -222,8 +220,8 @@ abbrev G
 \end{lstlisting}
 \vspace{6pt}
 
-A canonical, trivial instance of the type class is the world of pure programs without side-effects
-(functions), $\mathbf{Type}$ itself, where $\Phi$ is the identity functor.
+A canonical, trivial instance of the type class is $\mathbf{Type}$ with $\Phi$ as the identity
+functor, in other words, the world of pure programs without side-effects (functions).
 
 \vspace{6pt}
 \begin{lstlisting}[basicstyle=\tiny]
@@ -301,7 +299,7 @@ the main equivalence.
 
 \vspace{6pt}
 \begin{lstlisting}[basicstyle=\tiny]
-def coEndoYonedaEquiv {F : C ⥤ C} {X : C} : 
+def coEndoYonedaEquiv {F : C ⥤ C} (X : C) : 
   (CYEF X ⟶ (F ⋙ GEF)) ≃ Global ((F ⋙ GEF).obj X) where
   toFun     := τx2ggfx
   invFun    := ggfx2τx

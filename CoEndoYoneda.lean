@@ -1,104 +1,57 @@
 import Mathlib.CategoryTheory.Yoneda
 import Mathlib.CategoryTheory.Category.KleisliCat
 
+-- set_option mathlib.tactic.category.grind false
+
 /-
 
-Given a presheaf `C ⥤ Type u` *and* a functor of type `Type u ⥤ C`
-they can be composed to an endofunctor `C ⥤ C`.
+`CYF X`, the CoYoneda functor for `X` is a `Type u` valued functor, also called a presheaf,
 
-For example, a presheaf `CYF X` and a functor `Φ` as `CYF X ⋙ Φ`
-
-The existence of such a functor of type `Type u ⥤ C` is the first
-requirement of `class FunctionalCategory` modeled as
-- `Φ : Type u ⥤ C`.
-
-`class FunctionalCategory` also requires the existence of
-`Monad`-like natural transformations for global-like values
-together with a left unit law modeled as
-- `γμ : (GEF_def Φ ⋙ GEF_def Φ) ⟶ GEF_def Φ`
-- `γη : 𝟭 _ ⟶ GEF_def Φ`
-- `γ_left_unit : ∀ (X : C), γη.app ((GEF_def Φ).obj X) ≫ γμ.app X = 𝟙 ((GEF_def Φ).obj X)`
-where
-- `def GEF_def {C : Type (u + 1)} [LargeCategory.{u} C] (Φ : Type u ⥤ C) : C ⥤ C`
-is an endofunctor constructing `Φ`-related global values.
-
-I could have defined a `GlobalMonad` but I did not do it
-because only `γ_left_unit` is required
-(`γ_right_unit` and `γ_assoc` are not needed).
+The specific equivalence `typesCoEndoYonedaEquiv` for every `Type u` endofunctor `F`
+is just a special case of the general equivalence `coyonedaEquiv`.
 
 -/
 
-set_option mathlib.tactic.category.grind true
-
-namespace typesAndFunctionsCoEndoYoneda
+namespace TypesAndFunctionsCoEndoYoneda
 
 open CategoryTheory
 open Opposite
 
 universe u
 
--- CoYoneda `Functor` for `X`
 def CYF {C : Type (u + 1)} [Category.{u} C] (X : C) : C ⥤ Type u :=
   coyoneda.obj (op X)
 
--- the specific `typesCoEndoYonedaEquiv` equivalence for `Type u` endofunctors
--- is just a special case of the general `coyonedaEquiv` equivalence
---
--- a natural question is for what kind of categories `C` is there a
--- general `coEndoYonedaEquiv` equivalence for `C` endofunctors
---
 def typesCoEndoYonedaEquiv {F : Type u ⥤ Type u} (X : Type u) : (CYF X ⟶ F) ≃ F.obj X :=
   coyonedaEquiv
 
-end typesAndFunctionsCoEndoYoneda
+end TypesAndFunctionsCoEndoYoneda
 
+/-
 
-namespace typesAndKleisliIdFunctionsCoEndoYoneda
+A natural question is for which kind of categories `C`
+is there an equivalence `coEndoYonedaEquiv` for every `C` endofunctor `F`?
 
-open typesAndFunctionsCoEndoYoneda
+Given presheaf `CYF X` of type `C ⥤ Type u` and a functor `Φ` of type `Type u ⥤ C`
+they can be composed to an endofunctor of type `C ⥤ C` as `CYF X ⋙ Φ`.
 
-universe u
+`class FunctionalCategory` also requires
+- a functor `Φ` of type `Type u ⥤ C`
+- monad-like natural transformations for `Φ`-related globals
+  - `γμ : (GEF_def Φ ⋙ GEF_def Φ) ⟶ GEF_def Φ`
+  - `γη : 𝟭 _ ⟶ GEF_def Φ`
+together with a left unit law
+  - `γ_left_unit : ∀ (X : C), γη.app ((GEF_def Φ).obj X) ≫ γμ.app X = 𝟙 ((GEF_def Φ).obj X)`
 
-open CategoryTheory
+where
 
-def typeToKleisliId : Type u ⥤ KleisliCat Id where
-  obj X := KleisliCat.mk Id X
-  map {X Y} (f : X ⟶ Y) := fun x => (f x : Id Y)
-  map_id _ := rfl
-  map_comp _ _ := rfl
+- `def GEF_def {C : Type (u + 1)} [LargeCategory.{u} C] (Φ : Type u ⥤ C) : C ⥤ C`
+is an endofunctor constructing `Φ`-related globals.
 
-def kleisliIdToType : KleisliCat Id ⥤ Type u where
-  obj X := X
-  map {X Y} (f : X ⟶ Y) := TypeCat.ofHom (fun (x : X) => (f x : Y))
-  map_id _ := by ext x; rfl
-  map_comp _ _ := by ext x; rfl
+We could have defined a `GlobalMonad` but we did not do it
+because only `γ_left_unit` is required (`γ_right_unit` and `γ_assoc` are not needed).
 
-def kleisliIdEquivalence : Type u ≌ KleisliCat Id where
-  functor := typeToKleisliId
-  inverse := kleisliIdToType
-  unitIso := NatIso.ofComponents
-    (fun X => {
-      hom := TypeCat.ofHom (fun (x : X) => x)
-      inv := TypeCat.ofHom (fun (x : X) => x)
-      hom_inv_id := by ext x; rfl
-      inv_hom_id := by ext x; rfl
-    })
-    (by intros X Y f; ext x; rfl)
-  counitIso := NatIso.ofComponents
-    (fun X => {
-      hom := fun (x : X) => (x : Id X)
-      inv := fun (x : X) => (x : Id X)
-      hom_inv_id := rfl
-      inv_hom_id := rfl
-    })
-    (by intros X Y f; rfl)
-  functor_unitIso_comp X := by rfl
-
-def typesAndKleisliIdFunctionsCoEndoYonedaEquiv
-  {F : KleisliCat Id ⥤ Type u} (X : KleisliCat Id) : (CYF X ⟶ F) ≃ F.obj X :=
-    coyonedaEquiv
-
-end typesAndKleisliIdFunctionsCoEndoYoneda
+-/
 
 namespace CoEndoYoneda
 
@@ -107,58 +60,59 @@ open Opposite
 
 universe u
 
--- CoYoneda `Functor` for `X`
+-- CoYoneda functor for `X`
 def CYF {C : Type (u + 1)} [LargeCategory.{u} C] (X : C) : C ⥤ Type u :=
   coyoneda.obj (op X)
 
--- CoYoneda `EndoFunctor` for `Φ : Type u ⥤ C` and `X`
+-- CoYoneda endofunctor for `Φ : Type u ⥤ C` and `X`
 def CYEF_def {C : Type (u + 1)} [LargeCategory.{u} C] (Φ : Type u ⥤ C) (X : C) : C ⥤ C :=
   CYF X ⋙ Φ
 
--- Global `EndoFunctor` definition for `Φ : Type u ⥤ C` (`X` being `PUnit`)
+-- Global endofunctor for `Φ : Type u ⥤ C` (`X = PUnit`)
 def GEF_def {C : Type (u + 1)} [LargeCategory.{u} C] (Φ : Type u ⥤ C) : C ⥤ C :=
   CYEF_def Φ (Φ.obj PUnit)
 
--- Global elements for `Φ : Type u ⥤ C` are morphisms of type `Φ.obj PUnit ⟶ X`
+-- `Φ`-related globals are morphisms of type `Φ.obj PUnit ⟶ X`
 def G {C : Type (u + 1)} [LargeCategory.{u} C] (Φ : Type u ⥤ C) (X : C) : Type u :=
   Φ.obj PUnit ⟶ X
 
 -- `FunctionalCategory` is supposed to specify programs
--- bot pure programs (without side-effects) and impure programs (with side-effects)
--- but, ... , see later
+-- both pure programs (without side-effects) and impure programs (with side-effects)
+--
+-- but, ... , see later!
+--
 class FunctionalCategory (C : Type (u + 1)) extends LargeCategory.{u} C where
-  -- Functional Functor
+  -- Functional functor
   Φ : Type u ⥤ C
 
-  -- Global Multiplication
+  -- Global multiplication
   γμ : (GEF_def Φ ⋙ GEF_def Φ) ⟶ GEF_def Φ
-
-  -- Global Unit
-  γη : 𝟭 _ ⟶ GEF_def Φ
 
   -- Global Multiplication associativity law is not (yet) needed
   -- γ_assoc :
   --   ∀ (X : C), (GEF_def Φ).map (γμ.app X) ≫ γμ.app X = γμ.app ((GEF_def Φ).obj X) ≫ γμ.app X
 
+  -- Global unit
+  γη : 𝟭 _ ⟶ GEF_def Φ
+
+  -- Left global unit law
+  γ_left_unit : ∀ (X : C), γη.app ((GEF_def Φ).obj X) ≫ γμ.app X = 𝟙 ((GEF_def Φ).obj X)
+
   -- Right Global Unit law is not (yet) needed
   -- γ_right_unit :
   --   ∀ (X : C), (GEF_def Φ).map (γη.app X) ≫ γμ.app X = 𝟙 ((GEF_def Φ).obj X)
 
-  -- Left Global Unit law
-  γ_left_unit : ∀ (X : C), γη.app ((GEF_def Φ).obj X) ≫ γμ.app X = 𝟙 ((GEF_def Φ).obj X)
-
-  -- Functional `Functor` `map`
-  -- Note that we are into the `ConcreteCategory` realm now via `TypeCat.ofHom`
+  -- Functional functor map
+  -- We are into the `ConcreteCategory` world now via `TypeCat.ofHom`
   φ {X Y : Type u} (f : X → Y) : Φ.obj X ⟶ Φ.obj Y := Φ.map (TypeCat.ofHom f)
 
-  -- Functional `Functor` `map` equality
-  -- Note that we are into the `ConcreteCategory` realm now via `TypeCat.ofHom`
+  -- Functional functor map equality
   φ_eq : ∀ {X Y : Type u} (f : X → Y), φ f = Φ.map (TypeCat.ofHom f) := by
     intros
     rfl
 
-  -- relating `γη` and `φ`
-  -- (also involves `Φ.obj`, recall that `φ` is defined in terms of `Φ.map`)
+  -- Relating `γη` and `φ`
+  -- Also involves `Φ.obj` (recall that `φ` is defined in terms of `Φ.map`)
   γη_φ : ∀ (X : Type u), γη.app (Φ.obj X) = φ (fun x => φ (fun _ => x)) := by
     intros
     rfl
@@ -175,125 +129,22 @@ class FunctionalCategory (C : Type (u + 1)) extends LargeCategory.{u} C where
 
 open FunctionalCategory
 
--- CoYoneda EndoFunctor
+-- CoYoneda endofunctor
 def CYEF {C : Type (u + 1)} [FunctionalCategory C] (X : C) : C ⥤ C :=
   CYEF_def Φ X
 
--- Global EndoFunctor
--- `grind` complains about `left_inverse` (see later) when this is a `def`
+-- Global endofunctor
+-- `grind` complains when this is a `def` (see later : `left_inverse`)
 abbrev GEF {C : Type (u + 1)} [FunctionalCategory C] : C ⥤ C :=
   GEF_def Φ
 
-
 /-
 
-For `C = Type u`, the world of "pure programs without side-effects (functions)"
-there is a trivial instance modeled as
-- `instance typesFunctionalCategory : FunctionalCategory (Type u) where`
--   `Φ := 𝟭 (Type u)`
--   ...
-(for trivial definitions of the other declarations : see code).
-
-But what about the programming world that consist both of
-"pure programs without side-effects" and
-"impure programs with side-effects"?
-
-My idea was to formulate a CoEndoYoneda equivalence for endofunctors
-that could play a role in the programming world, and it turned out
-that the `FunctionalCategory` requirements were sufficient to prove
-that CoEndoYoneda equivalence.
-
-The formulation is modeled as
-- `def coEndoYonedaEquiv {F : C ⥤ C} {X : C} : (CYEF X ⟶ (F ⋙ GEF)) ≃ Global ((F ⋙ GEF).obj X)`
-where
-- `def Global : C → Type u := G Φ`
-where
-- `def G {C : Type (u + 1)} [LargeCategory.{u} C] (Φ : Type u ⥤ C) (X : C) : Type u`
-model `Φ`-related global values
-
-The proof of the equivalence uses
-- `def τx2ggfx {F : C ⥤ C} {X : C} (τx : CYEF X ⟶ F ⋙ GEF) : Global ((F ⋙ GEF).obj X)`
-modeling a function that
-given a natural transformation argument of type `CYEF X ⟶ (F ⋙ GEF)`.
-Yields a "global global value" result of type `Global ((F ⋙ GEF).obj X)`
-
-and
-
-- `def ggfx2τx {F : C ⥤ C} {X : C} (ggfx : Global (GEF.obj (F.obj X))) : CYEF X ⟶ (F ⋙ GEF)`
-modeling a function that
-given a "global global value" argument of type `Global (GEF.obj (F.obj X))`
-yields a natural transformation result of type `CYEF X ⟶ (F ⋙ GEF)`.
-
-The proof of the equivalence also uses
-- `theorem left_inverse {F : C ⥤ C} {X : C} (τx : CYEF X ⟶ (F ⋙ GEF)) :`
-    `τx = ggfx2τx (φ (fun _ => 𝟙 X) ≫ τx.app X)`
-
-and
-
-- `theorem right_inverse {F : C ⥤ C} {X : C} (ggfx : Global ((F ⋙ GEF).obj X)) :`
-    `ggfx = (φ (fun _ => 𝟙 X)) ≫ (ggfx2τx ggfx).app X`
-
-Both `theorem`s apply `φ` (defined as `Φ.map` using `TypeCat.ofHom`) to `fun _ => 𝟙 X`.
-For those who know about the classic `coyoneda` equivalence, should not come as a surprise.
-
-We also prove a less substantial (and less elegant) lemma that does not use `γμ`.
-
-The formulation is modeled as
-- `theorem coEndoYonedaLemma {F : C ⥤ C} {X : C} (τx : CYEF X ⟶ F) :`
-    `τx2γτx τx =`
-      `gfx2τx (φ (fun _ => 𝟙 X) ≫ τx.app X)`
-
-It also applies  `φ` defined to `fun _ => 𝟙 X`
-(for more details : see code).
-
-We could have proved a corresponding equivalence as well.
-
-But ... there is bad news and good news!
-
-First the bad news.
-
-Trying to define a `FunctionalCategory` instance for `KleisliCat M` for a monad `M`
-turned out not to be possible.
-
-So my `coEndoYonedaEquiv` is not generally useful for the programming world,
-only for the pure programming world, as far as `KleisliCat M` is concerned,
-where pureness then boils down to monad computation referential transparancy,
-cfr. expression evaluation referential transparancy.
-
-Next the good news (every disadvantage has an advantage).
-
-`class FunctionalCategory` actually *classifies* the property
-of being pure, without side-effects in `KleisliCat M`
-in a categorical way, because it forces equality
-`mz >>= fun z => pure (pure z) = pure mz`.
-
-The constraint imposed by `γη.naturality` on morphisms demands that
-binding `pure` twice to `mz` is exactly the same as applying `pure` to `mz`.
-
-If a `Monad` satisfies this purity constraint
-(which is required to instantiate `FunctionalCategory` class via `KleisliCat`),
-then its shape functor evaluated at `PUnit` is a `Subsingleton`.
-
-This means `M` is a trivial `Monad` (e.g. `Identity`, `Truncation`, or `Terminal`).
-
-We have formally verified this rejection for six standard computational monads in `PurityExamples.lean`:
-`Option`, `List`, `Reader R`, `Writer W`, `State S`, and `Cont R`.
-Satisfying the EnforcesPurity constraint for these monads either leads to a direct logical contradiction (as with `Option` and `List`) or mathematically forces their underlying parameters to be trivial (e.g. forcing the state type or the reader environment to be a `Subsingleton`).
-
-Formalizing the requirement:
-if `KleisliCat M` admits a `FunctionalCategory` structure under the canonical embedding
-then `M` is mathematically forced to satisfy the `EnforcesPurity` constraint.
-
-In a nutshell, as a side-effect (no pun intended (!)) I proved,
-in the `KleisliCat M` world the following theorem :
-
-*Referential transparancy is exactly the condition required for
-a computational context to admit a global CoEndoYoneda equivalence*
-(for more details : see code).
+`C = Type u`, the world of pure programs without side-effects (functions) is a functional category
+instance. But what about impure programs with side-effects?
 
 -/
 
--- trivial `FunctionalCategory` instance
 instance typesFunctionalCategory : FunctionalCategory (Type u) where
   Φ := 𝟭 (Type u)
 
@@ -314,6 +165,13 @@ instance typesFunctionalCategory : FunctionalCategory (Type u) where
 
   γ_left_unit := fun _ => by
     rfl
+
+
+/-
+
+First we prove a less substantial (and less elegant) lemma that does not use `γμ`.
+
+-/
 
 section LessSubstantialLemma
 
@@ -351,18 +209,12 @@ theorem CYEF_map_eq_φ {Z X Y : C} (f : X ⟶ Y) : (CYEF Z).map f = φ (. ≫ f)
 theorem GF_map_eq_φ {X Y : C} (f : X ⟶ Y) : GEF.map f = φ (. ≫ f) :=
   CYEF_map_eq_φ f
 
-@[simps]
-def τx2γτx {F : C ⥤ C} {X : C} (τ : CYEF X ⟶ F) :
-  CYEF X ⟶ (F ⋙ GEF)
-where
-  app Y := τ.app Y ≫ γη.app (F.obj Y)
-  naturality _ _ h := by
-    dsimp
-    have h_nat := γη.naturality (F.map h)
-    dsimp at h_nat
-    erw [τ.naturality_assoc, h_nat]
-    rw [Category.assoc]
-    rfl
+-- given a natural transformation argument of type `CYEF X ⟶ F`
+-- yields a global result of type `Global (F.obj X)`
+def τx2gfx {F : C ⥤ C} {X : C} (τx : CYEF X ⟶ F) :
+  Global (F.obj X) :=
+    let gfx := φ (fun _ => 𝟙 X) ≫ τx.app X
+    gfx
 
 -- given a global argument of type `Global (F.obj X)`
 -- yields a natural transformation result of type `CYEF X ⟶ (F ⋙ GEF)`
@@ -383,11 +235,24 @@ def gfx2τx {F : C ⥤ C} {X : C} (gfx : Global (F.obj X)) :
         (gfx ≫ F.map f) ≫ F.map h
     rw [F.map_comp, Category.assoc]
 
--- `τx2γτx τx` with `τx` of type `CYEF X ⟶ F`
--- can be defined in terms of `φ (fun _ => 𝟙 X) ≫ τx.app X`
-theorem coEndoYonedaLemma {F : C ⥤ C} {X : C} (τx : CYEF X ⟶ F) :
-  τx2γτx τx =
-    gfx2τx (φ (fun _ => 𝟙 X) ≫ τx.app X) := by
+-- `τx2γτx` is a correction natural transformation
+-- for the theorem below
+@[simps]
+def τx2γτx {F : C ⥤ C} {X : C} (τ : CYEF X ⟶ F) :
+  CYEF X ⟶ (F ⋙ GEF) := {
+  app Y := τ.app Y ≫ γη.app (F.obj Y)
+  naturality _ _ h := by
+    dsimp
+    have h_nat := γη.naturality (F.map h)
+    dsimp at h_nat
+    erw [τ.naturality_assoc, h_nat]
+    rw [Category.assoc]
+    rfl
+  }
+
+-- `τx2γτx τx` of type `CYEF X ⟶ (F ⋙ GEF)` equals `(gfx2τx ∘ τx2gfx) τx`
+theorem corrected_left_inverse {F : C ⥤ C} {X : C} (τx : CYEF X ⟶ F) :
+  τx2γτx τx = (gfx2τx ∘ τx2gfx) τx := by
   ext Y
   dsimp [τx2γτx, gfx2τx]
   erw [γη.naturality (τx.app Y)]
@@ -426,6 +291,12 @@ theorem coEndoYonedaLemma {F : C ⥤ C} {X : C} (τx : CYEF X ⟶ F) :
   exact (Eq.trans step1 (Eq.trans step2 (Eq.trans step3 step4))).symm
 
 end LessSubstantialLemma
+
+/-
+
+Second we prove a more substantial (and more elegant) lemma that also uses `γμ`.
+
+-/
 
 section CoEndoYonedaEquivalence
 
@@ -533,8 +404,8 @@ theorem left_inverse {F : C ⥤ C} {X : C} (τx : CYEF X ⟶ (F ⋙ GEF)) :
         Eq.trans h_stepE (congr_arg (. ≫ γμ.app (F.obj Y)) h_inner_eq)
   exact h_final
 
--- relating `γμ` and `φ` (also involves `Φ.obj`)
--- (recall that `φ` is defined in terms of `Φ.map`)
+-- Relating `γμ` and `φ`
+-- Also involves `Φ.obj` (recall that `φ` is defined in terms of `Φ.map`)
 theorem φ_γμ {X : C} (ggfx : Global (GEF.obj X)) :
     φ (fun (_ : PUnit) => ggfx) ≫ γμ.app X = ggfx := by
   have h_nat : ggfx ≫ γη.app (GEF.obj X) =
@@ -581,7 +452,7 @@ theorem right_inverse {F : C ⥤ C} {X : C} (ggfx : Global ((F ⋙ GEF).obj X)) 
   exact (φ_γμ ggfx).symm
 
 -- main equivalence
-def coEndoYonedaEquiv {F : C ⥤ C} {X : C} : (CYEF X ⟶ (F ⋙ GEF)) ≃ Global ((F ⋙ GEF).obj X)
+def coEndoYonedaEquiv {F : C ⥤ C} (X : C) : (CYEF X ⟶ (F ⋙ GEF)) ≃ Global ((F ⋙ GEF).obj X)
 where
   toFun     := τx2ggfx
   invFun    := ggfx2τx
@@ -590,7 +461,33 @@ where
 
 end CoEndoYonedaEquivalence
 
-section PurityTheorem
+/-
+
+So far so good, but ... .
+
+First the bad news.
+
+Trying to define a `FunctionalCategory` instance for `KleisliCat M` for every monad `M`
+turns out not to be possible.
+
+See also file `PurityExamples.lean`
+
+Therefore `coEndoYonedaEquiv` is not generally useful for the general programming world,
+only for the pure programming world, as far as `KleisliCat M` is concerned,
+where pureness then boils down to computation referential transparancy,
+cfr. evaluation referential transparancy.
+
+Next the good news (every disadvantage has an advantage).
+
+`class FunctionalCategory` actually *classifies* the property
+of being pure, without side-effects in `KleisliCat M`
+in a pointfree categorical way.
+
+Note that monads are not pointfree (monad binding `>>=` is pointful).
+
+-/
+
+section PurityTheorems
 
 open Functor
 
@@ -598,31 +495,12 @@ universe v
 
 variable (M : Type v → Type v) [Monad M] [LawfulMonad M]
 
-def EnforcesPurity : Prop :=
-  ∀ {X : Type v} (mx : M X),
-    (mx >>= fun x => pure (pure x)) = pure mx
-  -- ∀ {X : Type v} (mx : M X),
-  --   mx >>= (pure ∘ pure) = pure mx
-
-theorem purity_implies_shape_eq_pure
-  (h_pure : EnforcesPurity M) (mpu : M PUnit) : mpu = pure PUnit.unit := by
-  have h1 := h_pure mpu
-  have h2 := congrArg (fun (mmpu : M (M PUnit)) => mmpu >>= fun mpu => pure PUnit.unit) h1
-  simp at h2
-  exact h2
-
-theorem purity_implies_subsingleton_shape
-  (h_pure : EnforcesPurity M) : Subsingleton (M PUnit) := by
-  constructor
-  intro m1 m2
-  rw [purity_implies_shape_eq_pure M h_pure m1, purity_implies_shape_eq_pure M h_pure m2]
-
 -- The canonical embedding of `Type v` into `KleisliCat M`
 def κΦ : Type v ⥤ KleisliCat M where
   obj X := X
   map f := fun x => pure (f x)
   map_id X := by
-    ext x
+    ext
     dsimp [CategoryStruct.id, KleisliCat.id_def]
     rfl
   map_comp f g := by
@@ -631,12 +509,47 @@ def κΦ : Type v ⥤ KleisliCat M where
     rw [pure_bind]
     rfl
 
+-- Idempotency means `fmap pure = pure`
+-- The type system can infer that two `pure`s are involved
+-- `pure : X → M X` and `pure : M X → M (M X)`
+class Idempotency : Prop where
+  idempotent : ∀ {X : Type v} (mx : M X),
+    map pure mx = pure mx
+    -- map (pure : X → M X) mx = (pure : M X → M (M X)) mx
+
+-- A property that enforces purity (see later)
+def EnforcesPurity : Prop :=
+  ∀ {X : Type v} (mx : M X),
+    (mx >>= fun x => pure (pure x)) = pure mx
+
+-- `EnforcesPurity M` is exactly `Idempotency M`
+theorem enforces_purity_is_idempotency (M : Type v → Type v) [Monad M] [LawfulMonad M] :
+  EnforcesPurity M ↔ Idempotency M := by
+  constructor
+  · intro h
+    constructor
+    intro X mx
+    have h_bind : (mx >>= fun x => pure (pure x)) = map (fun x => (pure x : M X)) mx := by
+      exact bind_pure_comp pure mx
+    have h_pure := h mx
+    rw [h_bind] at h_pure
+    exact h_pure
+  · intro h X mx
+    have h_bind : (mx >>= fun x => pure (pure x)) = map (fun x => (pure x : M X)) mx := by
+      exact bind_pure_comp pure mx
+    rw [h_bind]
+    exact h.idempotent mx
+
+-- `γη.naturality` implies `EnforcesPurity M`
 theorem functional_category_implies_enforces_purity
   (γη : 𝟭 (KleisliCat M) ⟶ (GEF_def (κΦ M)))
   (h_γη_app : ∀ Z, γη.app Z = fun z2mz_id => pure (fun _ => pure z2mz_id)) :
-  EnforcesPurity M := by
+    EnforcesPurity M := by
   intro Z mz
-  have h_nat := γη.naturality (X := PUnit) (Y := Z) (fun _ => mz)
+  let f : PUnit.{v+1} → M Z := fun pu => mz
+  have h_nat :
+    f ≫ γη.app Z = γη.app PUnit ≫ (GEF_def (κΦ M)).map fun pu => mz
+    := γη.naturality (X := PUnit) (Y := Z) f
   have h1 : (fun _ => mz) ≫ γη.app Z = γη.app PUnit ≫ (GEF_def (κΦ M)).map (fun _ => mz) := h_nat
   -- LHS Evaluation
   have h_lhs : ((fun _ => mz) ≫ γη.app Z) PUnit.unit =
@@ -654,7 +567,8 @@ theorem functional_category_implies_enforces_purity
         fun pu2mz => pure (fun pu => pu2mz pu >>= fun pu => mz) := rfl
     rw [h_map]
     change
-      (pure (fun _ => pure PUnit.unit)) >>= (fun pu2mu => pure (fun pu => pu2mu pu >>= fun pu => mz)) = _
+      (pure (fun _ => pure PUnit.unit)) >>=
+        (fun pu2mu => pure (fun pu => pu2mu pu >>= fun pu => mz)) = _
     rw [pure_bind]
     change pure (fun (pu : PUnit) => pure PUnit.unit >>= fun pu => mz) = _ -- needed
     simp [pure_bind]
@@ -668,38 +582,13 @@ theorem functional_category_implies_enforces_purity
   rw [← bind_pure_comp] at h3
   exact h3
 
--- A monad is idempotent if `fmap pure = pure` (i.e. Tη = ηT)
--- Note that the type system knows that the two `pure`s involved
--- are different ones from a type point of view
-class IdempotentMonad (M : Type v → Type v) [Monad M] : Prop where
-  idempotent : ∀ {X : Type v} (mx : M X),
-    map pure mx = pure mx
-    -- map (pure : X → M X) mx = (pure : M X → M (M X)) mx
-
--- 1. We can actually PROVE that EnforcesPurity is exactly IdempotentMonad!
-theorem enforces_purity_is_idempotency (M : Type v → Type v) [Monad M] [LawfulMonad M] :
-  EnforcesPurity M ↔ IdempotentMonad M := by
-  constructor
-  · intro h
-    constructor
-    intro X mx
-    have h_bind : (mx >>= fun x => pure (pure x)) = map (fun x => (pure x : M X)) mx := by
-      exact bind_pure_comp pure mx
-    have h_pure := h mx
-    rw [h_bind] at h_pure
-    exact h_pure
-  · intro h X mx
-    have h_bind : (mx >>= fun x => pure (pure x)) = map (fun x => (pure x : M X)) mx := by
-      exact bind_pure_comp pure mx
-    rw [h_bind]
-    exact h.idempotent mx
-
 theorem enforces_purity_implies_naturality
   (h_pure : EnforcesPurity M)
-  -- 1. Explicitly declare Z as an object of KleisliCat M
   (γη_app : (Z : KleisliCat M) → (Z ⟶ (GEF_def (κΦ M)).obj Z))
-  -- 2. Use `show ... from ...` to cast the function to the correct morphism type
-  (h_γη_app : ∀ (Z : KleisliCat M), γη_app Z = show Z → M (PUnit.{v+1} → M Z) from fun z => pure (fun _ : PUnit.{v+1} => pure z)) :
+  (h_γη_app :
+    ∀ (Z : KleisliCat M),
+      γη_app Z =
+        show Z → M (PUnit.{v+1} → M Z) from fun z => pure (fun _ : PUnit.{v+1} => pure z)) :
   ∀ {X Y : KleisliCat M} (f : X ⟶ Y),
     f ≫ γη_app Y = γη_app X ≫ (GEF_def (κΦ M)).map f := by
 
@@ -725,22 +614,28 @@ theorem enforces_purity_implies_naturality
     rw [h_inner]
 
   rw [h_lhs, h_rhs]
-  let mx := f x
-  change (mx >>= fun y => pure (fun _ : PUnit.{v+1} => pure y)) = pure (fun _ : PUnit.{v+1} => mx)
+  let my := f x
+  change (my >>= fun y => pure (fun _ : PUnit.{v+1} => pure y)) = pure (fun _ : PUnit.{v+1} => my)
 
-  have h1 := h_pure mx
+  have h1 := h_pure my
   have h2 := congrArg (fun (mmy : M (M Y)) => mmy >>= fun my => pure (fun _ : PUnit.{v+1} => my)) h1
 
-  -- 3. Add explicit type hints to `pure mx` to resolve the typeclass ambiguity
-  have h_rhs_eq : ((pure mx : M (M Y)) >>= fun my => pure (fun _ : PUnit.{v+1} => my)) = pure (fun _ : PUnit.{v+1} => mx) := by
+  -- 3. Add explicit type hints to resolve the type ambiguity
+  have h_rhs_eq :
+    ((pure my : M (M Y)) >>= fun my => pure (fun _ : PUnit.{v+1} => my)) =
+      pure (fun _ : PUnit.{v+1} => my) := by
     rw [pure_bind]
 
-  -- 3. Add explicit type hints to `pure (pure y : M Y)` to resolve the typeclass ambiguity
-  have h_lhs_eq : ((mx >>= fun y => (pure (pure y : M Y) : M (M Y))) >>= fun my => pure (fun _ : PUnit.{v+1} => my)) =
-                  (mx >>= fun y => pure (fun _ : PUnit.{v+1} => (pure y : M Y))) := by
+  -- 3. Add explicit type hints to resolve the type ambiguity
+  have h_lhs_eq :
+    ((my >>= fun y => (pure (pure y : M Y) : M (M Y))) >>=
+      fun my => pure (fun _ : PUnit.{v+1} => my)) = -- needed
+        (my >>= fun y => pure (fun _ : PUnit => (pure y : M Y))) := by
     rw [bind_assoc]
-    have h_inner2 : (fun (y : Y) => (pure (pure y : M Y) : M (M Y)) >>= fun my => pure (fun _ : PUnit.{v+1} => my)) =
-                    (fun (y : Y) => pure (fun _ : PUnit.{v+1} => (pure y : M Y))) := by
+    have h_inner2 :
+      (fun (y : Y) => (pure (pure y : M Y) : M (M Y)) >>=
+        fun my => pure (fun _ : PUnit => my)) =
+          (fun (y : Y) => pure (fun _ : PUnit.{v+1} => (pure y : M Y))) := by -- needed
       funext y
       rw [pure_bind]
     rw [h_inner2]
@@ -748,65 +643,71 @@ theorem enforces_purity_implies_naturality
   rw [h_rhs_eq, h_lhs_eq] at h2
   exact h2
 
-
--- 2. Any Idempotent Monad on Type forces its shape at PUnit to be a Subsingleton.
---
--- Mathematical Justification:
--- The category of algebras of an idempotent monad is a full reflective subcategory.
--- Since full reflective subcategories are closed under limits, the terminal object
--- `PUnit` must belong to the subcategory, meaning it is perfectly reflected as itself.
--- Therefore `M PUnit ≃ PUnit`, making it a Subsingleton!
-
-theorem idempotent_monad_implies_subsingleton_shape
-  (M : Type v → Type v) [Monad M] [LawfulMonad M] [IdempotentMonad M] :
+theorem idempotency_implies_subsingleton_shape [Idempotency M] :
   Subsingleton (M PUnit) := by
 
-  open IdempotentMonad in
+  open Idempotency in
 
   constructor
   intro a b
 
-  have h_eq : ∀ y : M PUnit, y = pure PUnit.unit := by
+  have h_eq : ∀ mpu : M PUnit, mpu = pure PUnit.unit := by
 
-    intro y
+    intro mpu
 
-    have h1 : map id y = y := id_map y
+    have h1 : map id mpu = mpu := id_map mpu
 
     have h2 : @id PUnit = (fun _ => PUnit.unit) ∘ (pure : PUnit → M PUnit) := by
       funext x
       cases x
       rfl
 
-    have step1 : y = map ((fun _ => PUnit.unit) ∘ (pure : PUnit → M PUnit)) y := by
+    have step1 : mpu = map ((fun _ => PUnit.unit) ∘ (pure : PUnit → M PUnit)) mpu := by
       rw [← h2]
       exact h1.symm
 
-    have step2 : map ((fun _ => PUnit.unit) ∘ (pure : PUnit → M PUnit)) y =
-      map (fun _ => PUnit.unit) (map (pure : PUnit → M PUnit) y) := by
-      exact comp_map (pure : PUnit → M PUnit) (fun _ => PUnit.unit) y
+    have step2 : map ((fun _ => PUnit.unit) ∘ (pure : PUnit → M PUnit)) mpu =
+      map (fun _ => PUnit.unit) (map (pure : PUnit → M PUnit) mpu) := by
+      exact comp_map (pure : PUnit → M PUnit) (fun _ => PUnit.unit) mpu
 
-    have step3 : map (fun _ => PUnit.unit) (map (pure : PUnit → M PUnit) y) =
-      map (fun _ => PUnit.unit) (pure y : M (M PUnit)) := by
-      have hidem := idempotent y
+    have step3 : map (fun _ => PUnit.unit) (map (pure : PUnit → M PUnit) mpu) =
+      map (fun _ => PUnit.unit) (pure mpu : M (M PUnit)) := by
+      have hidem := idempotent mpu
       rw [hidem]
 
-    have step4 : map (fun _ => PUnit.unit) (pure y : M (M PUnit)) = pure PUnit.unit := by
-      exact map_pure (fun _ => PUnit.unit) y
+    have step4 : map (fun _ => PUnit.unit) (pure mpu : M (M PUnit)) = pure PUnit.unit := by
+      exact map_pure (fun _ => PUnit.unit) mpu
 
     rw [step1, step2, step3, step4]
 
   rw [h_eq a, h_eq b]
 
--- 3. Therefore, the User's Conjecture formally holds for ALL monads!
-theorem all_monads_purity_sieve
-  (M : Type v → Type v) [Monad M] [LawfulMonad M] (h : EnforcesPurity M) :
+theorem all_monads_purity_sieve (h : EnforcesPurity M) :
   Subsingleton (M PUnit) := by
-  -- Convert Purity to Idempotency using our proven theorem
-  have h_idem : IdempotentMonad M := (enforces_purity_is_idempotency M).mp h
-  -- Apply the category theory theorem
-  exact idempotent_monad_implies_subsingleton_shape M
+  have h_idem : Idempotency M := (enforces_purity_is_idempotency M).mp h
+  exact idempotency_implies_subsingleton_shape M
 
-end PurityTheorem
+-- an alternative proof
+
+-- `EnforcesPurity M` implies `mpu = pure PUnit.unit` for all `mpu : M PUnit`
+theorem enforces_purity_implies_pure_unit_eq
+  (h_pure : EnforcesPurity M) :
+    ∀ mpu : M PUnit, mpu = pure PUnit.unit := by
+      intro mpu
+      have h1 := h_pure mpu
+      have h2 := congrArg (fun mmpu => mmpu >>= fun mpu => pure PUnit.unit) h1
+      simp at h2
+      exact h2
+
+theorem enforces_purity_implies_subsingleton_shape
+  (h_pure : EnforcesPurity M) : Subsingleton (M PUnit) := by
+  constructor
+  intro m1 m2
+  rw [enforces_purity_implies_pure_unit_eq M h_pure m1,
+       enforces_purity_implies_pure_unit_eq M h_pure m2]
+
+end PurityTheorems
 
 
 end CoEndoYoneda
+

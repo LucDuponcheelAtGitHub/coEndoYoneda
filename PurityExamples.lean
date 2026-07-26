@@ -1,6 +1,6 @@
 import Mathlib
 
-section Examples
+namespace Examples
 
 universe u
 
@@ -63,15 +63,15 @@ instance (W : Type u) [Mul W] [One W] : Monad (MyWriter W) where
     let (y, w') := f mx.1
     (y, mx.2 * w')
 
-theorem writer_purity_implies (W : Type u) [Mul W] [One W] :
-  EnforcesPurity (MyWriter W) → ∀ u : W, u = 1 := by
-  intro h u
-  -- Let mx = (x, u) where x can be anything, e.g. PUnit.unit
-  have h1 := h (X := PUnit) (⟨⟩, u)
-  -- LHS: (⟨⟩, u) >>= fun x => ((x, 1), 1)
-  --      = (((), 1), u * 1)
-  -- RHS: (((), u), 1)
-  have h_eq : ((PUnit.unit, (1 : W)), u * 1) = ((PUnit.unit, u), (1 : W)) := h1
+theorem writer_purity_implies (W : Type w) [Mul W] [One W] :
+  EnforcesPurity (MyWriter W) → ∀ w : W, w = 1 := by
+  intro h w
+  -- Let mx = (x, w) where x can be anything, e.g. PUnit.unit
+  have h1 := h (X := PUnit) (⟨⟩, w)
+  -- LHS: (⟨⟩, w) >>= fun x => ((x, 1), 1)
+  --      = (((), 1), w * 1)
+  -- RHS: (((), w), 1)
+  have h_eq : ((PUnit.unit, (1 : W)), w * 1) = ((PUnit.unit, w), (1 : W)) := h1
   have h_eq1 := congrArg Prod.fst h_eq
   have h_w := congrArg Prod.snd h_eq1
   exact h_w.symm
@@ -159,32 +159,25 @@ abbrev MyIO (ε ω : Type) := EStateM ε ω
 
 open EStateM in
 
-theorem my_io_not_pure {ε ω : Type} (e : ε) (u : ω) : ¬ EnforcesPurity (MyIO ε ω) := by
-  intro h
-  let mte : MyIO ε ω Nat := throw e
-  have h1 := h mte
-  -- run both sides at a world state `u`
-  have h2 : run (mte >>= fun x => pure (pure x : MyIO ε ω Nat)) u =
-    run (pure mte : MyIO ε ω (MyIO ε ω Nat)) u := by
-    rw [h1]
+theorem my_io_not_pure {ε ω : Type} (e : ε) (w : ω) :
+  ¬ EnforcesPurity (MyIO ε ω) := by
+    intro h
+    let mte : MyIO ε ω Nat := throw e
+    have h1 := h mte
+    -- run both sides at a world state `w`
+    have h2 : run (mte >>= fun x => pure (pure x : MyIO ε ω Nat)) w =
+      run (pure mte : MyIO ε ω (MyIO ε ω Nat)) w := by
+      rw [h1]
 
-  -- The right side evaluates to a successful result containing the IO action
-  have h_rhs : run (pure mte : MyIO ε ω (MyIO ε ω Nat)) u = Result.ok mte u := rfl
+    -- The right side evaluates to a successful result containing the IO action
+    have h_rhs : run (pure mte : MyIO ε ω (MyIO ε ω Nat)) w = Result.ok mte w := rfl
 
-  -- The left side evaluates to a failed result because `mte` throws an error
-  have h_lhs : run (mte >>= fun x => pure (pure x : MyIO ε ω Nat)) u = Result.error e u := rfl
+    -- The left side evaluates to a failed result because `mte` throws an error
+    have h_lhs : run (mte >>= fun x => pure (pure x : MyIO ε ω Nat)) w = Result.error e w := rfl
 
-  rw [h_lhs, h_rhs] at h2
-  -- We now have `Result.error e u = Result.ok mte u`
-  -- This is a logical contradiction.
-  injection h2
-
-/-
-Therefore, if `IO` were transparent to the Lean prover, we would trivially
-prove `¬ EnforcesPurity IO` by providing any error `e` and world state `u`:
-
-theorem io_not_pure (e : IO.Error) (u : IO.RealWorld) : ¬ EnforcesPurity IO :=
-  my_io_not_pure e u
--/
+    rw [h_lhs, h_rhs] at h2
+    -- We now have `Result.error e u = Result.ok mte u`
+    -- This is a logical contradiction.
+    injection h2
 
 end Examples
