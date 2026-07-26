@@ -2,6 +2,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath, amssymb, amsthm}
 \usepackage{tikz-cd}
+\usepackage{adjustbox}
 \usepackage{hyperref}
 \usepackage{listings}
 \usepackage{xcolor}
@@ -69,18 +70,25 @@ Theory and Formalization in Lean 4}
 
 \begin{abstract}
 We present a variation of the CoYoneda Lemma for functional categories equipped with a monadic
-structure of its global elements, which we formally identify as \emph{Functional Categories}. The
-central theoretical contribution, the Pointfree CoEndoYoneda Equivalence, establishes an isomorphism
-between, on the one hand, natural transformations mapping out of co-Yoneda endofunctors to a
-designated kind of global endofunctors and, on the other hand, some corresponding kind of global
-elements. 
+structure of its global elements, which we formally identify as \emph{Functional Categories}. 
 
-The original motivation was to formulate an equivalence that could play a role in the broader
-programming  world, encompassing both pure programs, more precisely functions, and impure programs,
-more precisely computation with side-effects valued functions (modeled via Kleisli categories).
-While the requirements proved too restrictive to admit arbitrary monadic effects, this limitation
-reveals a profound  mathematical result: the \emph{Functional Category} constraints categorically
-classify the essence of referential transparency.
+The central theoretical contribution, the Pointfree CoEndoYoneda Equivalence, establishes an
+isomorphism between, on the one hand, natural transformations mapping out of co-Yoneda endofunctors
+to a designated kind of global endofunctors and, on the other hand, some corresponding kind of
+global elements. 
+
+Our original motivation was highly pragmatic: to formulate a CoEndoYoneda equivalence that could
+natively support both pure programs (functions) and impure programs (functions with side-effects, 
+modeled via Kleisli categories). While this aspiration ultimately met a mathematical wall, the
+failure was profoundly revealing. 
+
+The structural requirements of the \emph{Functional Category} equivalence categorically reject
+arbitrary monadic effects. This limitation unexpectedly revealed a spectacular classification
+theorem: the naturality constraint of our framework mathematically forces the monad to be pure
+(idempotent). 
+
+We present a grand finale establishing a perfect 3-way mathematical equivalence between abstract
+category theory (in casu idempotent monads) and computational semantics.
 
 In addition to outlining the mathematical foundations, we detail the complete formalization of this
 result in the Lean 4 theorem prover. We discuss the technical challenges of working with functor
@@ -92,22 +100,27 @@ type theory to construct fully formal, pointfree proofs of higher-level category
 \section{Introduction}
 
 The \emph{Co\!Yoneda Lemma} serves as a cornerstone of modern category theory, asserting that for
-any category  $\mathcal{C}$, object $X \in \mathcal{C}$, and functor
+any category $\mathcal{C}$, object $X \in \mathcal{C}$, and functor
 $F : \mathcal{C} \to \mathbf{Set}$, natural transformations $\text{Nat}(\mathcal{C}(X, -), F)$ are
-isomorphic to functor evaluations  $F(X)$. This result fundamentally states that an object $X$ is
+isomorphic to functor evaluations $F(X)$. This result fundamentally states that an object $X$ is
 completely determined by the morphisms out of it.
 
 In computational settings, we frequently encounter categories equipped with additional structure.
 Categories that have a functor mapping functions of types (or sets) to programs, their images being
-called pure programs. We define such a category as a \emph{Functional Category}. In this paper, we
-explore how a variation of the CoYoneda isomorphism extends in this setting. The variation replaces
-elements by global elements and is entirely pointfree.
+called \emph{pure programs}. We define such a category as a \emph{Functional Category}. The world of
+computer programs, consists of both pure programs (without side-effects) \emph{impure programs}
+(with side-effects). In this paper, we explore how a variation of the CoYoneda isomorphism extends
+in this setting. The variation replaces elements by global elements and is entirely pointfree. We
+also specialize this setting to Kleisli functions (monad-valued functions), as such focussing on
+\emph{pure computations} versus \emph{impure computations}, or, if you wish,
+\emph{referential computation transparency} versus
+\emph{non-referential computation transparency}
+(cfr. \emph{referential evaluation transparency of expressions}).
 
-A key motivation for this exploration is the world of computer programs, which consist of both 
-"pure programs without side-effects" and "impure programs with side-effects". We set out to
-formulate a CoEndoYoneda equivalence for endofunctors that could model this broader programming
-world using monads. Remarkably, we discover that the structural requirements of our equivalence
-serve as a sieve for purity, mathematically forcing monadic referential transparency.
+Remarkably, we discover that the structural requirements of our Co\!Yoneda equivalence serve as an
+airtight sieve for program purity, for programs that ase Kleisli functions. In other words the
+structural requirements of our Co\!Yoneda equivalence serve as an airtight sieve for computation
+purity (referential computation transparency).
 
 We provide a comprehensive discussion of how these concepts and theorems are formalized in the
 Lean 4 proof assistant using the \texttt{Mathlib} library.
@@ -124,16 +137,17 @@ CY\!F_X : \mathcal{C} \to \mathbf{Type}, \quad Y \mapsto \mathcal{C}(X, Y)
 \begin{definition}
 A \textbf{Functional Category} is a category $\mathcal{C}$ equipped with the following data:
 \begin{enumerate}
-    \item A designated functor $\Phi : \mathbf{Type} \to \mathcal{C}$.
-    \item A constructed endofunctor $GF : \mathcal{C} \to \mathcal{C}$ 
-          defined by \\
+    \item A functor $\Phi : \mathbf{Type} \to \mathcal{C}$.
+    \item An endofunctor $GF : \mathcal{C} \to \mathcal{C}$ defined by \\
           $GF(X) = \Phi(CY\!F_{\Phi(1)}(X))$.
-    \item A monadic structure on the globals of $\mathcal{C}$, provided by a \\
-          unit natural transformation  $\gamma\eta : \text{Id}_{\mathcal{C}} \to GF$ and a \\
-          multiplication natural transformation $\gamma\mu : GF \circ GF \to GF$.
+    \item A monadic structure on the globals of $\mathcal{C}$, provided by
+    \begin{enumerate}
+        \item a unit natural transformation  $\gamma\eta : \text{Id}_{\mathcal{C}} \to GF$
+        \item a multiplication natural transformation $\gamma\mu : GF \circ GF \to GF$.
+    \end{enumerate}
 \end{enumerate}
 
-These structural components must satisfy the standard monad left unit law: 
+These structural components must satisfy the monad left unit law: 
 \[
 \gamma\eta_{GF(X)} \circ \gamma\mu_X = \text{id}_{GF(X)}
 \]
@@ -141,6 +155,8 @@ These structural components must satisfy the standard monad left unit law:
 
 For now no other extra monad laws are needed in the formal Lean 4 proof. This is an interesting
 observation on its own.
+
+\vspace{12 pt}
 
 This structure essentially allows $\mathcal{C}$ to reflect the category of types into itself, while
 treating $GF$ as a monadic context. We define the \emph{Co\!Yoneda EndoFunctor}
@@ -227,8 +243,8 @@ instance typesFunctionalCategory : FunctionalCategory (Type u) where
 
 \section{The CoEndoYoneda Equivalence}
 
-The requirements of \texttt{FunctionalCategory} prove to be sufficient to establish a CoEndoYoneda
-equivalence for endofunctors.
+The requirements of \texttt{FunctionalCategory} turn out to be sufficient to establish a
+CoEndoYoneda equivalence for endofunctors.
 
 \subsection{Auxiliary definitions and theorems}
 
@@ -236,9 +252,9 @@ We construct a designated global element from a designated natural transformatio
 
 \vspace{6pt}
 \begin{lstlisting}[basicstyle=\tiny]
-def τX2ggfx {F : C ⥤ C} {X : C} (τX : CYEF X ⟶ F ⋙ GEF) :
+def τx2ggfx {F : C ⥤ C} {X : C} (τx : CYEF X ⟶ F ⋙ GEF) :
   Global ((F ⋙ GEF).obj X) :=
-    let ggfx := φ (fun _ => 𝟙 X) ≫ τX.app X
+    let ggfx := φ (fun _ => 𝟙 X) ≫ τx.app X
     ggfx
 \end{lstlisting}
 \vspace{6pt}
@@ -248,13 +264,13 @@ follows
 
 \vspace{6pt}
 \begin{lstlisting}[basicstyle=\tiny]
-def ggfx2τX
+def ggfx2τx
   {F : C ⥤ C} {X : C} (ggfx : Global (GEF.obj (F.obj X))) : CYEF X ⟶ (F ⋙ GEF) :=
-    let τX : CYEF X ⟶ F ⋙ GEF := {
+    let τx : CYEF X ⟶ F ⋙ GEF := {
       app Y := φ (ggfx ≫ (F ⋙ GEF).map .) ≫ γμ.app (F.obj Y)
       naturality _ _ h := ...
     }
-    τX
+    τx
 \end{lstlisting}
 \vspace{6pt}
 
@@ -262,7 +278,7 @@ We formulate (and prove, not shown) a left inverse theorem as follows
 
 \vspace{6pt}
 \begin{lstlisting}[basicstyle=\tiny]
-theorem left_inverse {F : C ⥤ C} {X : C} (τX : CYEF X ⟶ (F ⋙ GEF)) :
+theorem left_inverse {F : C ⥤ C} {X : C} (τx : CYEF X ⟶ (F ⋙ GEF)) :
     τx = ggfx2τx (τx2ggfx τx) := by ...
 \end{lstlisting}
 
@@ -287,83 +303,143 @@ the main equivalence.
 \begin{lstlisting}[basicstyle=\tiny]
 def coEndoYonedaEquiv {F : C ⥤ C} {X : C} : 
   (CYEF X ⟶ (F ⋙ GEF)) ≃ Global ((F ⋙ GEF).obj X) where
-  toFun     := τX2ggfx
-  invFun    := ggfx2τX
-  left_inv  := fun τX => (left_inverse  τX).symm
-  right_inv := fun τX => (right_inverse τX).symm
+  toFun     := τx2ggfx
+  invFun    := ggfx2τx
+  left_inv  := fun τx => (left_inverse  τx).symm
+  right_inv := fun τx => (right_inverse τx).symm
 \end{lstlisting}
 \vspace{6pt}
 
-This equivalence provides a completely pointfree and logically verified method for evaluating
-and constructing natural transformations in functional categories.
+This equivalence provides a completely pointfree and formally verified method for evaluating and
+constructing natural transformations in functional categories.
 
-\section{The Essence of Purity \\ (Every Disadvantage Has an Advantage)}
+\section{The Essence of Purity \\ (Every disadvantage has an advantage)}
 
-The original motivation was to define a CoEndoYoneda equivalence that could play a role in the
-broader programming world, which consists of both pure programs (functions) and impure programs
-(computation with side-effects valued functions). The natural setting for such impure programs is
-the Kleisli category of a Monad $M$, denoted \texttt{KleisliCat M}.
+\subsection{The Impure Aspiration}
+The original motivation for this research was entirely pragmatic: we sought to define a
+CoEndoYoneda equivalence that could play a role in the programming world, which encompasses both
+pure programs (functions) and impure programs
+(computations with side-effects, such as state mutation or I/O). A natural setting for such
+programs is the Kleisli category of a Monad $M$, denoted \texttt{KleisliCat M}. 
 
-However, attempting to instantiate \texttt{KleisliCat M} as a \texttt{FunctionalCategory} reveals
-an apparent limitation.  The equivalence cannot be instantiated for arbitrary monads.  Thus, the
-\texttt{coEndoYonedaEquiv} is not universally useful for the (potentially impure) programming
-world.
+We embarked on attempting to instantiate \texttt{FunctionalCategory} using this
+\texttt{KleisliCat M} over $\mathbf{Type}$ to construct an equivalence that could natively
+handle side-effects. However, this attempt revealed an apparent limitation: the equivalence cannot
+be instantiated for arbitrary  monads. Our \texttt{FunctionalCategory} definition, while
+structurally elegant, strictly rejected standard computational effects. 
 
-But this disadvantage reveals a profound mathematical advantage: \\
-the \texttt{FunctionalCategory} requirements, more precisely $\gamma\eta$-naturality, act as a
-strict classification of purity for \texttt{KleisliCat M}. They mathematically declare the essence
-of referential transparency of monad computations
-(cfr. referential transparency of expression evaluations).
+But this disadvantage birthed a profound mathematical advantage: one of the
+\texttt{FunctionalCategory} requirements acts as a classification of purity for
+\texttt{KleisliCat M}. 
 
-\subsection{The Purity Constraint}
+\vspace{12pt}
 
-The core constraint imposed by $\gamma\eta.\text{naturality}$ demands that mapping \texttt{pure}
-over the structure of a monadic value $m$ is exactly the same as wrapping the entire structure $m$
-in \texttt{pure}. Formally, it forces the equality:
+\emph{It declares referential computation transparency in a categorical way.}
+
+\subsection{The Purity Sieve}
+The core constraint responsible for this resistance is $\gamma\eta$-naturality. When evaluated in
+\texttt{KleisliCat M}, this naturality requirement imposes that mapping \texttt{pure} over the
+structure of a monadic value $mx$ is exactly the same as returning the value $mx$ \emph{without}
+triggering any side-effects. Formally, it enforces the computational equality:
 \[
-m \gg= \lambda z. \text{pure}(\text{pure}(z)) = \text{pure}(m)
+mx \gg= \lambda x. \text{pure}(\text{pure}(x)) = \text{pure}(mx)
 \]
-
-If a Monad satisfies this purity constraint (which is strictly required to instantiate
-\texttt{FunctionalCategory} via \texttt{KleisliCat}), then its shape functor evaluated at
-\texttt{PUnit} is a subsingleton (proof not shown). 
+We define this precisely in Lean as \texttt{EnforcesPurity}:
 
 \vspace{6pt}
 \begin{lstlisting}[basicstyle=\tiny]
-def Purity : Prop :=
+def EnforcesPurity : Prop :=
   ∀ {X : Type v} (mx : M X), (mx >>= fun x => pure (pure x)) = pure mx
-
-theorem purity_implies_subsingleton_shape
-  (h_pure : Purity M) : Subsingleton (M PUnit) := by ...
 \end{lstlisting}
 \vspace{6pt}
 
-This implies that $M$ is a "Subsingleton Monad" 
-(such as the Identity Monad or the Terminal Monad). 
-In other words, any standard computational effect is aggressively filtered out by the type system. 
-We have formally verified this rejection for six standard computational monads: 
-\texttt{Option}, \texttt{List}, \texttt{Reader}, \texttt{Writer}, \texttt{State}, and \texttt{Continuation}. 
-Satisfying the Purity constraint for these monads either leads to a direct logical contradiction 
-(as with \texttt{Option} and \texttt{List}) or mathematically forces their underlying parameters to be trivial 
-(e.g. forcing the state type or the reader environment to be a \texttt{Subsingleton}).
+One immediate consequence of \texttt{EnforcesPurity} is that the monad's shape functor evaluated at
+the terminal object \texttt{PUnit} must be trivial (proof not shown):
 
-We formalize this conclusion explicitly (proof not shown):
 \vspace{6pt}
 \begin{lstlisting}[basicstyle=\tiny]
-theorem functional_category_implies_purity
-  (γη : 𝟭 (KleisliCat M) ⟶ (GEF_def (κΦ M)))
-  (h_γη_app : ∀ X, γη.app X = fun x => pure (fun _ => pure x)) :
-  Purity M := by ...
+theorem purity_implies_subsingleton_shape
+  (h_pure : EnforcesPurity M) : Subsingleton (M PUnit) := by ...
 \end{lstlisting}
 \vspace{6pt}
 
-{\em Referential transparency is exactly the requirement for a computational context to admit a
-global coyoneda endofunctor equivalence}.
+Intuitively, \texttt{Subsingleton (M PUnit)} demands that the monad cannot express any meaningful
+impureness at the unit level. For example, for the \textbf{State Monad} ($S \to (Y \times S)$),
+evaluating at \texttt{PUnit} yields $S \to (\mathbf{1} \times S) \cong S \to S$. The only way
+$S \to S$ can be a subsingleton is if $S$ itself is a subsingleton (i.e., there is no state).
+Thus, State is successfully rejected.
+
+However, \texttt{Subsingleton (M PUnit)} is a necessary but \emph{insufficient} condition for
+complete purity. Consider the \textbf{Reader Monad} ($R \to Y$). At \texttt{PUnit}, this is 
+$R \to \mathbf{1}$, which is \emph{always} a subsingleton regardless of what the environment $R$ is,
+meaning the Reader Monad slips through this partial net. 
+
+But our \texttt{EnforcesPurity} constraint is far more robust. When applied to the Reader Monad over
+a non-trivial environment (like \texttt{Bool}), the equation 
+\[
+(m \gg= \lambda x. \text{pure}(\text{pure}(x))) = \text{pure}(m)
+\]
+fails, filtering out the Reader Monad as well. 
+
+\subsection{A Universal 3-Way Equivalence}
+If \texttt{EnforcesPurity} filters out every non-trivial computational effect, what does it mean
+mathematically? By expanding the monadic \texttt{bind}, the definitional equation required for
+purity simplifies seamlessly to:
+\[
+\text{fmap pure } m = \text{pure } m
+\]
+In categorical terms, this is precisely the requirement $T\eta = \eta T$, which is one of the
+defining characteristics of an \textbf{Idempotent Monad}~\cite{nlab-idempotent-monad, borceux1994}. 
+
+An idempotent monad represents a computational context where layering the effect twice adds no new
+information over applying it once. In the category of Sets, it is a well-known theorem that all
+idempotent monads correspond to full reflective subcategories~\cite{nlab-reflective-subcategory, borceux1994}, effectively forcing the monad to not
+add anything.
+
+We formalized this profound connection in Lean 4, establishing a complete, closed-loop 3-way
+equivalence between \emph{pointfree} Category Theory morphisms
+(the $\gamma\eta$-naturality of our Functional Category), Computational Semantics
+(\texttt{EnforcesPurity}), and \emph{pointful} Category Theory monad-valued functions
+(\texttt{IdempotentMonad}). 
+
+\begin{center}
+\adjustbox{max width=\textwidth}{%
+\begin{tikzcd}[row sep=huge, column sep=huge]
+\text{Naturality of } \gamma\eta \arrow[rr, leftrightarrow, "\text{CoEndoYoneda / Functional Category}"] \arrow[dr, leftrightarrow, "\text{Abstract Category Theory}"'] & & \text{EnforcesPurity } M \arrow[dl, leftrightarrow, "\text{Computational Semantics}"] \\
+& \text{Idempotent Monad } M & 
+\end{tikzcd}
+}
+\end{center}
+
+We completely verified this loop in Lean. The forward direction utilizes \texttt{bind\_pure\_comp}
+to collapse the naturality square into purity, while the reverse direction beautifully relies on
+\texttt{bind\_assoc} to inflate the purity constraint back into the full categorical square.
+
+\vspace{6pt}
+\begin{lstlisting}[basicstyle=\tiny]
+theorem enforces_purity_implies_naturality
+  (h_pure : EnforcesPurity M)
+  (γη_app : (Z : KleisliCat M) → (Z ⟶ (GEF_def (κΦ M)).obj Z))
+  (h_γη_app : ∀ (Z : KleisliCat M), γη_app Z = 
+    show Z → M (PUnit.{v+1} → M Z) from fun z => pure (fun _ : PUnit.{v+1} => pure z)) :
+  ∀ {X Y : KleisliCat M} (f : X ⟶ Y),
+    f ≫ γη_app Y = γη_app X ≫ (GEF_def (κΦ M)).map f := by ...
+\end{lstlisting}
+\vspace{6pt}
+
+Thus, we confirm our ultimate thesis
+
+\vspace{12pt}
+
+\emph{Referential transparency is exactly the requirement for a computational context to admit a
+global coyoneda endofunctor equivalence.}
+
 
 \section{Proof Techniques and Challenges in Lean 4}
 
 Formalizing abstract category theory in dependent type theory (DTT) introduces unique
-difficulties, particularly concerning definitional equality. 
+difficulties, for example in \texttt{left\_inverse}, particularly concerning definitional
+equality. 
 
 \subsection{Strict Functor Composition}
 In standard mathematics, functor composition is strictly associative. In Lean 4, however, these are
@@ -383,23 +459,25 @@ through the unit laws and naturality squares:
 
 \begin{lstlisting}[basicstyle=\tiny]
   have h1 : 
-    τX.app Y = τX.app Y ≫ 𝟙 ((GEF_def Φ).obj (F.obj Y)) := 
-      (Category.comp_id (τX.app Y)).symm
+    τx.app Y = τx.app Y ≫ 𝟙 ((GEF_def Φ).obj (F.obj Y)) := 
+      (Category.comp_id (τx.app Y)).symm
   have h2 : 
     𝟙 ((GEF_def Φ).obj (F.obj Y)) = 
       γη.app ((GEF_def Φ).obj (F.obj Y)) ≫ γμ.app (F.obj Y) :=
         (γ_left_unit (F.obj Y)).symm
   have h_left_unit : 
-    τX.app Y = 
-      τX.app Y ≫ (γη.app ((GEF_def Φ).obj (F.obj Y)) ≫ γμ.app (F.obj Y)) :=
-        Eq.trans h1 (congr_arg (τX.app Y ≫ .) h2)
+    τx.app Y = 
+      τx.app Y ≫ (γη.app ((GEF_def Φ).obj (F.obj Y)) ≫ γμ.app (F.obj Y)) :=
+        Eq.trans h1 (congr_arg (τx.app Y ≫ .) h2)
 \end{lstlisting}
 \vspace{6pt}
 
 This localized approach bypasses the rigid typing of the category morphisms by
 acting directly on the equality type \texttt{=} in the universe of types. This technique is highly
 robust and avoids the infamous "motive is not type correct" errors common in Lean category theory
-formalization.
+formalization. Defeating type mismatches often requires subtle casting nudges, such as
+\texttt{show ... from ...}, to force Lean to unify deep definitional equalities within higher-order
+functions.
 
 \section{Conclusion}
 
@@ -408,11 +486,33 @@ functional category setting. While our initial aim was to generalize this equiva
 computational effects via monads, the rigorous formalization process revealed that the required
 categorical structure fundamentally filters out impurities.
 
-By successfully formalizing the lemma in Lean 4, we have not only verified its absolute logical
+By successfully formalizing the lemma in Lean 4, we have not only verified its absolute formal
 correctness but also established that \texttt{FunctionalCategory} mathematically classifies
-referential transparency. Moreover, we have demonstrated a concrete methodology for handling strict
+referential transparency, uncovering a 3-way mathematical equivalence spanning pointfree category
+theory and pointful computational semantics. 
+
+Moreover, we have demonstrated a concrete methodology for handling strict
 composition equality in dependent type theory. The approach of combining explicit structural
 definitions with targeted, step-by-step equality chaining provides a reliable method for
 formalizing advanced category theory in modern proof assistants.
+
+\begin{thebibliography}{9}
+
+\bibitem{borceux1994}
+Francis Borceux,
+\textit{Handbook of Categorical Algebra} (Volumes 1--3).
+Encyclopedia of Mathematics and its Applications. Cambridge University Press, 1994.
+
+\bibitem{nlab-idempotent-monad}
+nLab authors,
+\textit{Idempotent monad},
+\url{https://ncatlab.org/nlab/show/idempotent+monad}.
+
+\bibitem{nlab-reflective-subcategory}
+nLab authors,
+\textit{Reflective subcategory},
+\url{https://ncatlab.org/nlab/show/reflective+subcategory}.
+
+\end{thebibliography}
 
 \end{document}

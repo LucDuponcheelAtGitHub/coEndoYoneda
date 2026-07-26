@@ -1,15 +1,17 @@
 import Mathlib
 
+section Examples
+
 universe u
 
--- The definition of Purity
-def Purity (M : Type u → Type u) [Monad M] : Prop :=
+-- The definition of EnforcesPurity
+def EnforcesPurity (M : Type u → Type u) [Monad M] : Prop :=
   ∀ {X : Type u} (mx : M X), (mx >>= fun x => pure (pure x)) = pure mx
 
 --------------------------------------------------------------------------------
 -- 1. Option Monad
 --------------------------------------------------------------------------------
-theorem option_not_pure : ¬ Purity (Option : Type → Type) := by
+theorem option_not_pure : ¬ EnforcesPurity (Option : Type → Type) := by
   intro h
   have h1 := h (none : Option Nat)
   -- none >>= f is none
@@ -22,7 +24,7 @@ theorem option_not_pure : ¬ Purity (Option : Type → Type) := by
 --------------------------------------------------------------------------------
 -- 2. List Monad
 --------------------------------------------------------------------------------
-theorem list_not_pure : ¬ Purity (List : Type → Type) := by
+theorem list_not_pure : ¬ EnforcesPurity (List : Type → Type) := by
   intro h
   have h1 := h ([1, 2] : List Nat)
   -- [1, 2] >>= fun x => [[x]] is [[1], [2]]
@@ -42,7 +44,7 @@ instance (R : Type u) : Monad (MyReader R) where
   bind mx f := fun r => f (mx r) r
 
 theorem reader_purity_implies (R : Type u) :
-  Purity (MyReader R) → Subsingleton R := by
+  EnforcesPurity (MyReader R) → Subsingleton R := by
   intro h
   constructor
   intro r1 r2
@@ -62,14 +64,14 @@ instance (W : Type u) [Mul W] [One W] : Monad (MyWriter W) where
     (y, mx.2 * w')
 
 theorem writer_purity_implies (W : Type u) [Mul W] [One W] :
-  Purity (MyWriter W) → ∀ w : W, w = 1 := by
-  intro h w
-  -- Let mx = (x, w) where x can be anything, e.g. PUnit.unit
-  have h1 := h (X := PUnit) (⟨⟩, w)
-  -- LHS: (⟨⟩, w) >>= fun x => ((x, 1), 1)
-  --      = (((), 1), w * 1)
-  -- RHS: (((), w), 1)
-  have h_eq : ((PUnit.unit, (1 : W)), w * 1) = ((PUnit.unit, w), (1 : W)) := h1
+  EnforcesPurity (MyWriter W) → ∀ u : W, u = 1 := by
+  intro h u
+  -- Let mx = (x, u) where x can be anything, e.g. PUnit.unit
+  have h1 := h (X := PUnit) (⟨⟩, u)
+  -- LHS: (⟨⟩, u) >>= fun x => ((x, 1), 1)
+  --      = (((), 1), u * 1)
+  -- RHS: (((), u), 1)
+  have h_eq : ((PUnit.unit, (1 : W)), u * 1) = ((PUnit.unit, u), (1 : W)) := h1
   have h_eq1 := congrArg Prod.fst h_eq
   have h_w := congrArg Prod.snd h_eq1
   exact h_w.symm
@@ -86,7 +88,7 @@ instance (S : Type u) : Monad (MyState S) where
     f x s'
 
 theorem state_purity_implies (S : Type u) :
-  Purity (MyState S) → Subsingleton S := by
+  EnforcesPurity (MyState S) → Subsingleton S := by
   intro h
   constructor
   intro s1 s2
@@ -117,7 +119,7 @@ instance (R : Type u) : Monad (MyCont R) where
   bind mx f := fun k => mx (fun x => f x k)
 
 theorem cont_purity_implies (R : Type u) :
-  Purity (MyCont R) → Subsingleton R := by
+  EnforcesPurity (MyCont R) → Subsingleton R := by
   intro h
   constructor
   intro r1 r2
@@ -136,3 +138,53 @@ theorem cont_purity_implies (R : Type u) :
   -- LHS: r1
   -- RHS: r2
   exact h_eval
+
+--------------------------------------------------------------------------------
+-- 7. IO Monad
+--------------------------------------------------------------------------------
+/-
+In Lean 4, `IO X` is structurally defined as `EStateM IO.Error IO.RealWorld X`
+under the hood, which represents a computation that can either throw an error
+(`IO.Error`) or succeed, while modifying a real-world state (`IO.RealWorld`).
+
+However, `IO` is implemented using opaque types (via `BaseIO` and `ST`),
+so the typechecker cannot see through its definitions to prove theorems by
+simple reduction (`rfl`).
+
+To demonstrate exactly how the IO monad rejects purity mathematically, we define
+`MyIO ε ω` as its transparent counterpart, where `ω` (omega) represents the world state.
+-/
+
+abbrev MyIO (ε ω : Type) := EStateM ε ω
+
+open EStateM in
+
+theorem my_io_not_pure {ε ω : Type} (e : ε) (u : ω) : ¬ EnforcesPurity (MyIO ε ω) := by
+  intro h
+  let mte : MyIO ε ω Nat := throw e
+  have h1 := h mte
+  -- run both sides at a world state `u`
+  have h2 : run (mte >>= fun x => pure (pure x : MyIO ε ω Nat)) u =
+    run (pure mte : MyIO ε ω (MyIO ε ω Nat)) u := by
+    rw [h1]
+
+  -- The right side evaluates to a successful result containing the IO action
+  have h_rhs : run (pure mte : MyIO ε ω (MyIO ε ω Nat)) u = Result.ok mte u := rfl
+
+  -- The left side evaluates to a failed result because `mte` throws an error
+  have h_lhs : run (mte >>= fun x => pure (pure x : MyIO ε ω Nat)) u = Result.error e u := rfl
+
+  rw [h_lhs, h_rhs] at h2
+  -- We now have `Result.error e u = Result.ok mte u`
+  -- This is a logical contradiction.
+  injection h2
+
+/-
+Therefore, if `IO` were transparent to the Lean prover, we would trivially
+prove `¬ EnforcesPurity IO` by providing any error `e` and world state `u`:
+
+theorem io_not_pure (e : IO.Error) (u : IO.RealWorld) : ¬ EnforcesPurity IO :=
+  my_io_not_pure e u
+-/
+
+end Examples
